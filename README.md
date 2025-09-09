@@ -1,59 +1,59 @@
-# Course Materials RAG System
+# 课程材料RAG系统
 
-source:https://github.com/https-deeplearning-ai/starting-ragchatbot-codebase
+source: https://github.com/https-deeplearning-ai/starting-ragchatbot-codebase
 
-A Retrieval-Augmented Generation (RAG) system designed to answer questions about course materials using semantic search and AI-powered responses.
+一个检索增强生成（RAG）系统，旨在使用语义搜索和AI驱动的响应来回答关于课程材料的问题。
 
-## Overview
+## 概述
 
-This application is a full-stack web application that enables users to query course materials and receive intelligent, context-aware responses. It uses ChromaDB for vector storage, Anthropic's Claude for AI generation, and provides a web interface for interaction.
+这是一个全栈Web应用程序，使用户能够查询课程材料并获得智能的、上下文感知的响应。它使用ChromaDB进行向量存储，使用Anthropic的Claude进行AI生成，并提供Web界面进行交互。
 
 
-## Prerequisites
+## 先决条件
 
-- Python 3.13 or higher
-- uv (Python package manager)
-- An Anthropic API key (for Claude AI)
-- **For Windows**: Use Git Bash to run the application commands - [Download Git for Windows](https://git-scm.com/downloads/win)
+- Python 3.13或更高版本
+- uv（Python包管理器）
+- Anthropic API密钥（用于Claude AI）
+- **Windows用户**：使用Git Bash运行应用程序命令 - [下载Git for Windows](https://git-scm.com/downloads/win)
 
-## Installation
+## 安装
 
-1. **Install uv** (if not already installed)
+1. **安装uv**（如果尚未安装）
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-2. **Install Python dependencies**
+2. **安装Python依赖**
    ```bash
    uv sync
    ```
 
-3. **Set up environment variables**
+3. **设置环境变量**
    
-   Create a `.env` file in the root directory:
+   在根目录创建`.env`文件：
    ```bash
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
    ```
 
-## Running the Application
+## 运行应用程序
 
-### Quick Start
+### 快速启动
 
-Use the provided shell script:
+使用提供的shell脚本：
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
 
-### Manual Start
+### 手动启动
 
 ```bash
 cd backend
 uv run uvicorn app:app --reload --port 8000
 ```
 
-The application will be available at:
-- Web Interface: `http://localhost:8000`
-- API Documentation: `http://localhost:8000/docs`
+应用程序可通过以下地址访问：
+- Web界面：`http://localhost:8000`
+- API文档：`http://localhost:8000/docs`
 
 
