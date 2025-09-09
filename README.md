@@ -1,5 +1,7 @@
 # Course Materials RAG System
 
+source:https://github.com/https-deeplearning-ai/starting-ragchatbot-codebase
+
 A Retrieval-Augmented Generation (RAG) system designed to answer questions about course materials using semantic search and AI-powered responses.
 
 ## Overview
@@ -53,4 +55,5 @@ uv run uvicorn app:app --reload --port 8000
 The application will be available at:
 - Web Interface: `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
+
 
