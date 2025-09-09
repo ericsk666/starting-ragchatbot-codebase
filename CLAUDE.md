@@ -90,3 +90,5 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 2. 用户体验和界面友好性
 3. 性能优化和响应速度
 4. 扩展性和维护性
+- 总是使用 uv 来运行server ,不要直接使用 pip
+- 确保使用 uv 来管理所有依赖
