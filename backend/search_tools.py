@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional, Protocol
 from abc import ABC, abstractmethod
 from vector_store import VectorStore, SearchResults
+from config import config
 
 
 class Tool(ABC):
@@ -8,8 +9,25 @@ class Tool(ABC):
     
     @abstractmethod
     def get_tool_definition(self) -> Dict[str, Any]:
-        """Return Anthropic tool definition for this tool"""
+        """Return Claude tool definition for this tool"""
         pass
+    
+    def get_openai_tool_definition(self) -> Dict[str, Any]:
+        """Return OpenAI tool definition for this tool"""
+        claude_def = self.get_tool_definition()
+        
+        return {
+            "type": "function",
+            "function": {
+                "name": claude_def["name"],
+                "description": claude_def.get("description", ""),
+                "parameters": claude_def.get("input_schema", {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                })
+            }
+        }
     
     @abstractmethod
     def execute(self, **kwargs) -> str:
@@ -25,7 +43,7 @@ class CourseSearchTool(Tool):
         self.last_sources = []  # Track sources from last search
     
     def get_tool_definition(self) -> Dict[str, Any]:
-        """Return Anthropic tool definition for this tool"""
+        """Return Claude tool definition for this tool"""
         return {
             "name": "search_course_content",
             "description": "Search course materials with smart course name matching and lesson filtering",
@@ -129,8 +147,21 @@ class ToolManager:
 
     
     def get_tool_definitions(self) -> list:
-        """Get all tool definitions for Anthropic tool calling"""
+        """Get all tool definitions for Claude tool calling"""
         return [tool.get_tool_definition() for tool in self.tools.values()]
+    
+    def get_openai_tool_definitions(self) -> list:
+        """Get all tool definitions for OpenAI tool calling"""
+        return [tool.get_openai_tool_definition() for tool in self.tools.values()]
+    
+    def get_tool_definitions_for_provider(self, provider: str = None) -> list:
+        """Get tool definitions for specified provider"""
+        provider = provider or config.LLM_PROVIDER
+        
+        if provider == "deepseek":
+            return self.get_openai_tool_definitions()
+        else:
+            return self.get_tool_definitions()
     
     def execute_tool(self, tool_name: str, **kwargs) -> str:
         """Execute a tool by name with given parameters"""

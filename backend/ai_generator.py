@@ -1,11 +1,19 @@
+"""
+多提供商AI生成器 - 支持Claude和DeepSeek的统一接口
+使用智能路由器实现双模型策略
+"""
+
 import anthropic
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
+from config import config
+from llm_router import llm_router
+
 
 class AIGenerator:
-    """Handles interactions with Anthropic's Claude API for generating responses"""
+    """统一的AI生成器 - 支持Claude和DeepSeek双模型路由"""
     
-    # Static system prompt to avoid rebuilding on each call
-    SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
+    # 静态系统提示，避免每次调用重建
+    SYSTEM_PROMPT = """You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
 
 Search Tool Usage:
 - Use the search tool **only** for questions about specific course content or detailed educational materials
@@ -20,7 +28,6 @@ Response Protocol:
  - Provide direct answers only — no reasoning process, search explanations, or question-type analysis
  - Do not mention "based on the search results"
 
-
 All responses must be:
 1. **Brief, Concise and focused** - Get to the point quickly
 2. **Educational** - Maintain instructional value
@@ -29,82 +36,249 @@ All responses must be:
 Provide only the direct answer to what was asked.
 """
     
-    def __init__(self, api_key: str, model: str):
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = model
+    def __init__(self, api_key: str = None, model: str = None):
+        """
+        初始化AI生成器
         
-        # Pre-build base API parameters
+        Args:
+            api_key: API密钥（如果未提供则从配置读取）
+            model: 模型名称（如果未提供则从配置读取）
+        """
+        self.provider = config.LLM_PROVIDER
+        
+        if self.provider == "deepseek":
+            # 使用路由器，不需要直接初始化客户端
+            self.client = None
+            self.model = None
+        else:
+            # Claude提供商
+            self.client = anthropic.Anthropic(
+                api_key=api_key or config.ANTHROPIC_API_KEY
+            )
+            self.model = model or config.ANTHROPIC_MODEL
+        
+        # 预构建基础参数
         self.base_params = {
-            "model": self.model,
             "temperature": 0,
             "max_tokens": 800
         }
     
-    def generate_response(self, query: str,
+    def generate_response(self, 
+                         query: str,
                          conversation_history: Optional[str] = None,
                          tools: Optional[List] = None,
                          tool_manager=None) -> str:
         """
-        Generate AI response with optional tool usage and conversation context.
+        生成AI响应，支持工具使用和对话上下文
         
         Args:
-            query: The user's question or request
-            conversation_history: Previous messages for context
-            tools: Available tools the AI can use
-            tool_manager: Manager to execute tools
+            query: 用户的问题或请求
+            conversation_history: 对话历史（可选）
+            tools: 可用工具列表
+            tool_manager: 工具管理器
             
         Returns:
-            Generated response as string
+            生成的响应字符串
         """
+        if self.provider == "deepseek":
+            return self._generate_deepseek_response(
+                query, conversation_history, tools, tool_manager
+            )
+        else:
+            return self._generate_claude_response(
+                query, conversation_history, tools, tool_manager
+            )
+    
+    def _generate_deepseek_response(self, 
+                                   query: str,
+                                   conversation_history: Optional[str] = None,
+                                   tools: Optional[List] = None,
+                                   tool_manager=None) -> str:
+        """使用DeepSeek（通过路由器）生成响应"""
         
-        # Build system content efficiently - avoid string ops when possible
+        # 构建消息列表（OpenAI格式）
+        messages = []
+        
+        # 系统消息
+        system_content = self.SYSTEM_PROMPT
+        if conversation_history:
+            system_content += f"\n\nPrevious conversation:\n{conversation_history}"
+        
+        messages.append({"role": "system", "content": system_content})
+        messages.append({"role": "user", "content": query})
+        
+        # 处理工具格式 
+        openai_tools = None
+        if tools:
+            # 检查工具是否已经是OpenAI格式（第一个工具有"type": "function"）
+            if (tools and isinstance(tools[0], dict) and 
+                tools[0].get("type") == "function"):
+                # 已经是OpenAI格式，直接使用
+                openai_tools = tools
+            else:
+                # Claude格式，需要转换
+                openai_tools = self._convert_tools_to_openai(tools)
+        
+        try:
+            # 使用路由器调用
+            if openai_tools:
+                response = llm_router.call_with_tools(
+                    messages=messages,
+                    tools=openai_tools,
+                    **self.base_params
+                )
+            else:
+                response_text = llm_router.call_simple_chat(
+                    messages=messages,
+                    **self.base_params
+                )
+                return response_text
+            
+            # 处理工具调用响应
+            if (hasattr(response.choices[0].message, 'tool_calls') and 
+                response.choices[0].message.tool_calls and tool_manager):
+                return self._handle_openai_tool_execution(
+                    response, messages, openai_tools, tool_manager
+                )
+            
+            # 返回普通响应
+            return response.choices[0].message.content or ""
+            
+        except Exception as e:
+            print(f"[ERROR] DeepSeek响应生成失败: {e}")
+            return f"抱歉，我遇到了一些技术问题。请稍后再试。"
+    
+    def _generate_claude_response(self, 
+                                 query: str,
+                                 conversation_history: Optional[str] = None,
+                                 tools: Optional[List] = None,
+                                 tool_manager=None) -> str:
+        """使用Claude生成响应（保持原有逻辑）"""
+        
+        # 构建系统内容
         system_content = (
             f"{self.SYSTEM_PROMPT}\n\nPrevious conversation:\n{conversation_history}"
             if conversation_history 
             else self.SYSTEM_PROMPT
         )
         
-        # Prepare API call parameters efficiently
+        # 准备API调用参数
         api_params = {
-            **self.base_params,
+            "model": self.model,
             "messages": [{"role": "user", "content": query}],
-            "system": system_content
+            "system": system_content,
+            **self.base_params
         }
         
-        # Add tools if available
+        # 添加工具（如果可用）
         if tools:
             api_params["tools"] = tools
             api_params["tool_choice"] = {"type": "auto"}
         
-        # Get response from Claude
-        response = self.client.messages.create(**api_params)
-        
-        # Handle tool execution if needed
-        if response.stop_reason == "tool_use" and tool_manager:
-            return self._handle_tool_execution(response, api_params, tool_manager)
-        
-        # Return direct response
-        return response.content[0].text
-    
-    def _handle_tool_execution(self, initial_response, base_params: Dict[str, Any], tool_manager):
-        """
-        Handle execution of tool calls and get follow-up response.
-        
-        Args:
-            initial_response: The response containing tool use requests
-            base_params: Base API parameters
-            tool_manager: Manager to execute tools
+        try:
+            # 获取Claude响应
+            response = self.client.messages.create(**api_params)
             
-        Returns:
-            Final response text after tool execution
-        """
-        # Start with existing messages
+            # 处理工具执行
+            if response.stop_reason == "tool_use" and tool_manager:
+                return self._handle_claude_tool_execution(response, api_params, tool_manager)
+            
+            # 返回直接响应
+            return response.content[0].text
+            
+        except Exception as e:
+            print(f"[ERROR] Claude响应生成失败: {e}")
+            return f"抱歉，我遇到了一些技术问题。请稍后再试。"
+    
+    def _convert_tools_to_openai(self, claude_tools: List[Dict]) -> List[Dict]:
+        """将Claude工具格式转换为OpenAI格式"""
+        openai_tools = []
+        
+        for tool in claude_tools:
+            if not isinstance(tool, dict) or "name" not in tool:
+                continue
+                
+            openai_tool = {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool.get("description", ""),
+                    "parameters": tool.get("input_schema", {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    })
+                }
+            }
+            openai_tools.append(openai_tool)
+        
+        return openai_tools
+    
+    def _handle_openai_tool_execution(self, 
+                                     initial_response,
+                                     messages: List[Dict],
+                                     tools: List[Dict],
+                                     tool_manager) -> str:
+        """处理OpenAI格式的工具执行"""
+        
+        # 添加AI的工具调用消息
+        messages.append({
+            "role": "assistant", 
+            "content": initial_response.choices[0].message.content or "",
+            "tool_calls": initial_response.choices[0].message.tool_calls
+        })
+        
+        # 执行所有工具调用
+        for tool_call in initial_response.choices[0].message.tool_calls:
+            tool_name = tool_call.function.name
+            
+            try:
+                # 解析参数
+                import json
+                tool_args = json.loads(tool_call.function.arguments)
+                
+                # 执行工具
+                tool_result = tool_manager.execute_tool(tool_name, **tool_args)
+                
+                # 添加工具结果消息
+                messages.append({
+                    "role": "tool",
+                    "content": tool_result,
+                    "tool_call_id": tool_call.id
+                })
+                
+            except Exception as e:
+                # 添加错误消息
+                messages.append({
+                    "role": "tool", 
+                    "content": f"工具执行错误: {str(e)}",
+                    "tool_call_id": tool_call.id
+                })
+        
+        # 获取最终响应（不带工具）
+        try:
+            final_response = llm_router.call_simple_chat(
+                messages=messages,
+                **self.base_params
+            )
+            return final_response
+            
+        except Exception as e:
+            return f"生成最终响应时出错: {str(e)}"
+    
+    def _handle_claude_tool_execution(self, 
+                                     initial_response, 
+                                     base_params: Dict[str, Any], 
+                                     tool_manager) -> str:
+        """处理Claude格式的工具执行（保持原有逻辑）"""
+        
+        # 开始使用现有消息
         messages = base_params["messages"].copy()
         
-        # Add AI's tool use response
+        # 添加AI的工具使用响应
         messages.append({"role": "assistant", "content": initial_response.content})
         
-        # Execute all tool calls and collect results
+        # 执行所有工具调用并收集结果
         tool_results = []
         for content_block in initial_response.content:
             if content_block.type == "tool_use":
@@ -119,17 +293,24 @@ Provide only the direct answer to what was asked.
                     "content": tool_result
                 })
         
-        # Add tool results as single message
+        # 将工具结果作为单个消息添加
         if tool_results:
             messages.append({"role": "user", "content": tool_results})
         
-        # Prepare final API call without tools
+        # 准备最终API调用（不带工具）
         final_params = {
-            **self.base_params,
+            "model": self.model,
             "messages": messages,
-            "system": base_params["system"]
+            "system": base_params["system"],
+            **self.base_params
         }
         
-        # Get final response
+        # 获取最终响应
         final_response = self.client.messages.create(**final_params)
         return final_response.content[0].text
+
+
+# 工厂函数，根据配置创建合适的生成器
+def create_ai_generator() -> AIGenerator:
+    """根据当前配置创建AI生成器"""
+    return AIGenerator()
