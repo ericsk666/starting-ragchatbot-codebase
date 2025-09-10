@@ -269,6 +269,9 @@ DEBUG=1 uv run uvicorn app:app --reload --port 8000
 
 ## 📖 项目文档索引
 
+### 🎯 入门指南
+- **[RAG_SYSTEM_COMPLETE_GUIDE.md](RAG_SYSTEM_COMPLETE_GUIDE.md)** - 🆕 RAG系统完整指南（图文详解）
+
 ### 核心文档
 - **[CLAUDE.md](CLAUDE.md)** - 开发指南和项目上下文
 - **[LLM_MIGRATION_GUIDE.md](LLM_MIGRATION_GUIDE.md)** - LLM迁移完整技术方案
