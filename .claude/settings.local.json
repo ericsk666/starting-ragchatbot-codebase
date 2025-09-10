@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(python:*)",
+      "Bash(uv sync:*)",
+      "Bash(C:/Users/cheng/.local/bin/uv.exe run python -c \"import sys; print(sys.executable)\")",
+      "Bash(C:/Users/cheng/.local/bin/uv.exe pip install --dry-run fastapi uvicorn python-dotenv python-multipart)",
+      "Bash(C:/Users/cheng/.local/bin/uv.exe pip install chromadb==1.0.15)",
+      "Bash(C:/Users/cheng/.local/bin/uv.exe pip install sentence-transformers==5.0.0)",
+      "Bash(.venv\\Scripts\\python.exe:*)",
+      "Bash(dir:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
