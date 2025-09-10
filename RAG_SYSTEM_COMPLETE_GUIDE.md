@@ -19,11 +19,11 @@
 
 ```mermaid
 graph TB
-    subgraph "📚 智能图书馆系统"
-        A[📄 课程文档] -->|管理员处理| B[📇 索引卡片系统]
-        B -->|读者查询| C[🔍 智能检索员]
-        C -->|找到相关内容| D[🤖 AI专家团队]
-        D -->|生成答案| E[💬 个性化回答]
+    subgraph "智能图书馆系统"
+        A["📄 课程文档"] -->|管理员处理| B["📇 索引卡片系统"]
+        B -->|读者查询| C["🔍 智能检索员"]
+        C -->|找到相关内容| D["🤖 AI专家团队"]
+        D -->|生成答案| E["💬 个性化回答"]
     end
     
     style A fill:#e1f5fe
@@ -51,37 +51,37 @@ graph TB
 
 ```mermaid
 flowchart TD
-    subgraph "📝 原始文档"
-        DOC[course1_script.txt<br/>104KB文本文件]
+    subgraph "原始文档"
+        DOC["course1_script.txt<br/>104KB文本文件"]
     end
     
-    subgraph "🏗️ 准备阶段 - 文档处理"
-        DOC --> PARSE[📖 文档解析器]
+    subgraph "准备阶段 - 文档处理"
+        DOC --> PARSE["📖 文档解析器"]
         PARSE --> |提取元数据| META[课程标题<br/>讲师信息<br/>课程链接]
         PARSE --> |识别结构| LESSONS[Lesson 0<br/>Lesson 1<br/>Lesson 2...]
         LESSONS --> CHUNK[✂️ 文本分块器]
         CHUNK --> |500字符块<br/>100字符重叠| CHUNKS[Chunk 1<br/>Chunk 2<br/>Chunk 3...]
     end
     
-    subgraph "🧮 向量化阶段"
+    subgraph "向量化阶段"
         CHUNKS --> EMBED[🔢 嵌入模型<br/>all-MiniLM-L6-v2]
-        EMBED --> |生成向量| VECTORS["Vector 1: 0.23, -0.45, ...<br/>Vector 2: 0.12, 0.67, ...<br/>Vector 3: -0.34, 0.89, ..."]
+        EMBED --> |生成向量| VECTORS[Vector 1 - 0.23 -0.45 ...<br/>Vector 2 - 0.12 0.67 ...<br/>Vector 3 - -0.34 0.89 ...]
     end
     
-    subgraph "💾 存储阶段"
+    subgraph "存储阶段"
         VECTORS --> CHROMA[ChromaDB向量数据库]
         META --> CATALOG[course_catalog集合]
         VECTORS --> CONTENT[course_content集合]
     end
     
     subgraph "🔍 查询阶段"
-        QUERY[用户: "什么是prompt caching?"] --> QEMBED[查询向量化]
+        QUERY[用户提问<br/>什么是prompt caching] --> QEMBED[查询向量化]
         QEMBED --> SEARCH[相似度搜索]
         SEARCH <--> CONTENT
-        SEARCH --> RESULTS[找到相关Chunks<br/>距离: 0.85, 0.73, 0.68]
+        SEARCH --> RESULTS[找到相关Chunks<br/>距离 0.85 0.73 0.68]
     end
     
-    subgraph "🤖 响应生成"
+    subgraph "响应生成"
         RESULTS --> CONTEXT[构建上下文]
         CONTEXT --> ROUTER[🚦 智能路由器]
         ROUTER -->|需要搜索| MODEL_V3[DeepSeek-V3<br/>工具调用模型]
@@ -458,13 +458,13 @@ graph TD
     START[收到用户查询] --> ANALYZE[分析查询特征]
     
     ANALYZE --> CHECK1{包含搜索关键词?}
-    CHECK1 -->|是<br/>"查找"/"搜索"/"课程中"| USE_V3[使用DeepSeek-V3]
+    CHECK1 -->|是<br/>查找-搜索-课程中| USE_V3[使用DeepSeek-V3]
     CHECK1 -->|否| CHECK2{需要工具调用?}
     
     CHECK2 -->|是<br/>明确需要搜索| USE_V3
     CHECK2 -->|否| CHECK3{复杂推理任务?}
     
-    CHECK3 -->|是<br/>分析/解释/比较| USE_R1[使用DeepSeek-R1]
+    CHECK3 -->|是<br/>分析-解释-比较| USE_R1[使用DeepSeek-R1]
     CHECK3 -->|否| CHECK4{对话历史相关?}
     
     CHECK4 -->|需要上下文| USE_R1
