@@ -11,14 +11,15 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>AI学习助手</h1>
-            <p class="subtitle">询问课程内容、讲师信息或具体知识点</p>
-        </header>
-
         <div class="main-content">
             <!-- Left Sidebar -->
             <aside class="sidebar">
+                <!-- Sidebar Header with Title -->
+                <div class="sidebar-header">
+                    <h1 class="sidebar-title">AI学习助手</h1>
+                    <p class="sidebar-subtitle">智能课程问答系统</p>
+                </div>
+                
                 <!-- Course Stats -->
                 <div class="sidebar-section">
                     <div class="resources-header">
@@ -39,28 +40,30 @@
 
             <!-- Main Chat Area -->
             <main class="chat-main">
-                <div class="chat-container">
+                <div class="chat-card">
                     <div id="chatMessages" class="chat-messages"></div>
-                    <div class="chat-input-container">
-                        <input 
-                            type="text" 
-                            id="chatInput" 
-                            placeholder="输入你的问题..."
-                            autocomplete="off"
-                        >
-                        <button id="sendButton">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                            </svg>
-                        </button>
-                    </div>
-                    <!-- 推荐问题气泡 -->
-                    <div class="suggested-bubbles" id="suggestedBubbles">
-                        <button class="bubble-item" data-question="What are the core principles and evolution path of large language models?">Core principles of LLMs</button>
-                        <button class="bubble-item" data-question="How to effectively build, evaluate and optimize generative AI applications?">Building generative AI apps</button>
-                        <button class="bubble-item" data-question="What is RAG technology and how to implement it?">Understanding RAG technology</button>
-                        <button class="bubble-item" data-question="What are the best practices for prompt engineering?">Prompt engineering best practices</button>
+                    <div class="chat-input-wrapper">
+                        <div class="chat-input-container">
+                            <input 
+                                type="text" 
+                                id="chatInput" 
+                                placeholder="输入你的问题..."
+                                autocomplete="off"
+                            >
+                            <button id="sendButton">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- 推荐问题气泡 -->
+                        <div class="suggested-bubbles" id="suggestedBubbles">
+                            <button class="bubble-item" data-question="What are the core principles and evolution path of large language models?">Core principles of LLMs</button>
+                            <button class="bubble-item" data-question="How to effectively build, evaluate and optimize generative AI applications?">Building generative AI apps</button>
+                            <button class="bubble-item" data-question="What is RAG technology and how to implement it?">Understanding RAG technology</button>
+                            <button class="bubble-item" data-question="What are the best practices for prompt engineering?">Prompt engineering best practices</button>
+                        </div>
                     </div>
                 </div>
             </main>
