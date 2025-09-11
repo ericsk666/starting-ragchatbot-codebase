@@ -1713,13 +1713,8 @@ sim_matrix = cosine_similarity(vectors)
         
         // 显示节点详情 - 更新右侧面板
         function showNodeDetail(nodeId, customDetail = null) {
-            console.log('showNodeDetail called with:', nodeId);
             const detail = customDetail || nodeDetails[nodeId];
-            if (!detail) {
-                console.error('No detail found for node:', nodeId);
-                return;
-            }
-            console.log('Detail found:', detail);
+            if (!detail) return;
             
             // 移除之前选中节点的高亮
             if (currentSelectedNode) {
@@ -1742,10 +1737,8 @@ sim_matrix = cosine_similarity(vectors)
         
         // 更新右侧面板内容
         function updateRightPanel(detail) {
-            console.log('updateRightPanel called with:', detail);
             // 更新概念原理标签页
             const conceptInfo = document.getElementById('selected-node-info');
-            console.log('conceptInfo element:', conceptInfo);
             if (conceptInfo) {
                 conceptInfo.innerHTML = `
                     <div class="panel-section">
@@ -1857,13 +1850,8 @@ sim_matrix = cosine_similarity(vectors)
 
         // 初始化向量空间可视化
         function initializeVectorVisualization() {
-            console.log('Initializing vector visualization...');
             const canvas = document.getElementById('vector-canvas');
-            if (!canvas) {
-                console.error('Canvas element not found!');
-                return;
-            }
-            console.log('Canvas found:', canvas);
+            if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
             const width = canvas.width;
@@ -2347,6 +2335,7 @@ sim_matrix = cosine_similarity(vectors)
                         '平均响应': '0ms'
                     }
                 }
+            }
             },
             'session-mgmt': {
                 title: '📋 会话管理',

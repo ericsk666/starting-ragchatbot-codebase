@@ -12,7 +12,8 @@
       "Bash(.venv\\Scripts\\python.exe:*)",
       "Bash(dir:*)",
       "Bash(mv:*)",
-      "Read(//d/study/starting_codebase/**)"
+      "Read(//d/study/starting_codebase/**)",
+      "Bash(start rag_system_demo_v4.html)"
     ],
     "deny": [],
     "ask": []

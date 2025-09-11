@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Debug V4 Demo</h1>
+    <button onclick="testFunction()">Test Click Function</button>
+    <div id="output"></div>
+    
+    <script>
+        function testFunction() {
+            console.log('Button clicked!');
+            document.getElementById('output').innerHTML = 'Function called at: ' + new Date();
+            
+            // Test if showNodeDetail exists in parent window
+            if (window.opener && window.opener.showNodeDetail) {
+                console.log('showNodeDetail exists in parent');
+            } else {
+                console.log('showNodeDetail NOT found');
+            }
+        }
+        
+        // Check if functions are defined
+        console.log('Checking functions...');
+        console.log('showNodeDetail:', typeof showNodeDetail);
+        console.log('updateRightPanel:', typeof updateRightPanel);
+    </script>
+</body>
+</html>
