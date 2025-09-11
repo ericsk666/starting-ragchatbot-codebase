@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import os
 
 from config import config
@@ -40,11 +40,18 @@ class QueryRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
 
+class SourceDetail(BaseModel):
+    """Detailed source information with links"""
+    title: str
+    course_link: Optional[str] = None
+    lesson_link: Optional[str] = None
+
 class QueryResponse(BaseModel):
     """Response model for course queries"""
     answer: str
     sources: List[str]
     session_id: str
+    sources_detail: Optional[List[SourceDetail]] = None
 
 class CourseStats(BaseModel):
     """Response model for course statistics"""
@@ -63,12 +70,23 @@ async def query_documents(request: QueryRequest):
             session_id = rag_system.session_manager.create_session()
         
         # Process query using RAG system
-        answer, sources = rag_system.query(request.query, session_id)
+        answer, sources, sources_detail = rag_system.query(request.query, session_id)
+        
+        # Convert sources_detail to SourceDetail objects
+        sources_detail_obj = []
+        if sources_detail:
+            for source in sources_detail:
+                sources_detail_obj.append(SourceDetail(
+                    title=source.get('title', ''),
+                    course_link=source.get('course_link'),
+                    lesson_link=source.get('lesson_link')
+                ))
         
         return QueryResponse(
             answer=answer,
             sources=sources,
-            session_id=session_id
+            session_id=session_id,
+            sources_detail=sources_detail_obj if sources_detail_obj else None
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

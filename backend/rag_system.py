@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Any
 import os
 from document_processor import DocumentProcessor
 from vector_store import VectorStore
@@ -99,7 +99,7 @@ class RAGSystem:
         
         return total_courses, total_chunks
     
-    def query(self, query: str, session_id: Optional[str] = None) -> Tuple[str, List[str]]:
+    def query(self, query: str, session_id: Optional[str] = None) -> Tuple[str, List[str], List[Dict]]:
         """
         Process a user query using the RAG system with tool-based search.
         
@@ -108,7 +108,7 @@ class RAGSystem:
             session_id: Optional session ID for conversation context
             
         Returns:
-            Tuple of (response, sources list - empty for tool-based approach)
+            Tuple of (response, sources list, sources_detail list with links)
         """
         # Create prompt for the AI with clear instructions
         prompt = f"""Answer this question about course materials: {query}"""
@@ -128,6 +128,7 @@ class RAGSystem:
         
         # Get sources from the search tool
         sources = self.tool_manager.get_last_sources()
+        sources_detail = self.tool_manager.get_last_sources_detail()
 
         # Reset sources after retrieving them
         self.tool_manager.reset_sources()
@@ -137,7 +138,7 @@ class RAGSystem:
             self.session_manager.add_exchange(session_id, query, response)
         
         # Return response with sources from tool searches
-        return response, sources
+        return response, sources, sources_detail
     
     def get_course_analytics(self) -> Dict:
         """Get analytics about the course catalog"""

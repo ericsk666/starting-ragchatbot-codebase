@@ -82,7 +82,7 @@ async function sendMessage() {
 
         // Replace loading message with response
         loadingMessage.remove();
-        addMessage(data.answer, 'assistant', data.sources);
+        addMessage(data.answer, 'assistant', data.sources, false, data.sources_detail);
 
     } catch (error) {
         // Replace loading message with error
@@ -110,7 +110,7 @@ function createLoadingMessage() {
     return messageDiv;
 }
 
-function addMessage(content, type, sources = null, isWelcome = false) {
+function addMessage(content, type, sources = null, isWelcome = false, sourcesDetail = null) {
     const messageId = Date.now();
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}${isWelcome ? ' welcome-message' : ''}`;
@@ -125,7 +125,33 @@ function addMessage(content, type, sources = null, isWelcome = false) {
         html += `
             <details class="sources-collapsible">
                 <summary class="sources-header">Sources</summary>
-                <div class="sources-content">${sources.join(', ')}</div>
+                <div class="sources-content">`;
+        
+        // If we have detailed sources with links, use them
+        if (sourcesDetail && sourcesDetail.length > 0) {
+            const sourcesHtml = sourcesDetail.map((source, index) => {
+                // Determine which link to use (prefer lesson_link over course_link)
+                const link = source.lesson_link || source.course_link;
+                
+                if (link) {
+                    // Create clickable link
+                    return `<a href="${link}" target="_blank" class="source-link" rel="noopener noreferrer">
+                        ${escapeHtml(source.title)}
+                        <span class="external-icon">↗</span>
+                    </a>`;
+                } else {
+                    // No link available, show as plain text
+                    return `<span class="source-plain">${escapeHtml(source.title)}</span>`;
+                }
+            }).join('<span class="source-separator">, </span>');
+            
+            html += sourcesHtml;
+        } else {
+            // Fallback to simple text sources
+            html += sources.join(', ');
+        }
+        
+        html += `</div>
             </details>
         `;
     }

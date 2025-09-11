@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sources Links</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .query-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .send-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .send-btn:hover {
+            background: #1d4ed8;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+        .sources {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .source-link {
+            color: #2563eb;
+            text-decoration: none;
+            margin-right: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .source-link:hover {
+            background: rgba(37, 99, 235, 0.1);
+            text-decoration: underline;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: #dc2626;
+            background: #fee;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Test Sources Links Feature</h1>
+        
+        <div class="test-section">
+            <h2>Query Test</h2>
+            <input type="text" class="query-input" id="queryInput" 
+                   placeholder="Try: Are there any courses that include a Chatbot implementation?"
+                   value="Are there any courses that include a Chatbot implementation?">
+            <button class="send-btn" onclick="sendQuery()">Send Query</button>
+            
+            <div class="response" id="response">
+                <div class="loading" id="loading" style="display:none;">Loading...</div>
+                <div id="answer"></div>
+                <div class="sources" id="sources" style="display:none;">
+                    <strong>Sources:</strong>
+                    <div id="sourcesList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Raw API Response</h2>
+            <pre id="rawResponse">No response yet...</pre>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+
+        async function sendQuery() {
+            const query = document.getElementById('queryInput').value;
+            if (!query) return;
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('answer').innerHTML = '';
+            document.getElementById('sources').style.display = 'none';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        session_id: sessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Store session ID
+                if (!sessionId) {
+                    sessionId = data.session_id;
+                }
+
+                // Display raw response
+                document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+
+                // Display answer
+                document.getElementById('answer').innerHTML = `<p>${data.answer}</p>`;
+
+                // Display sources with links
+                if (data.sources_detail && data.sources_detail.length > 0) {
+                    const sourcesList = document.getElementById('sourcesList');
+                    sourcesList.innerHTML = '';
+                    
+                    data.sources_detail.forEach((source, index) => {
+                        const link = source.lesson_link || source.course_link;
+                        
+                        if (link) {
+                            const linkElement = document.createElement('a');
+                            linkElement.href = link;
+                            linkElement.target = '_blank';
+                            linkElement.className = 'source-link';
+                            linkElement.textContent = source.title + ' ↗';
+                            sourcesList.appendChild(linkElement);
+                        } else {
+                            const span = document.createElement('span');
+                            span.textContent = source.title;
+                            span.style.marginRight = '10px';
+                            sourcesList.appendChild(span);
+                        }
+                        
+                        if (index < data.sources_detail.length - 1) {
+                            sourcesList.appendChild(document.createTextNode(', '));
+                        }
+                    });
+                    
+                    document.getElementById('sources').style.display = 'block';
+                } else if (data.sources && data.sources.length > 0) {
+                    // Fallback to simple sources
+                    document.getElementById('sourcesList').textContent = data.sources.join(', ');
+                    document.getElementById('sources').style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('answer').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('rawResponse').textContent = `Error: ${error.message}`;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Load on page ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Test page ready. Server should be running on http://localhost:8000');
+        });
+    </script>
+</body>
+</html>

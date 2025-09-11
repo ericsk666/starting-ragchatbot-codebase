@@ -245,6 +245,50 @@ header h1 {
     color: var(--text-secondary);
 }
 
+/* Source link styles */
+.source-link {
+    color: #3b82f6;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 2px 4px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.source-link:hover {
+    color: #2563eb;
+    background-color: rgba(59, 130, 246, 0.1);
+    text-decoration: underline;
+}
+
+.source-link:active {
+    color: #1d4ed8;
+}
+
+/* External link icon */
+.external-icon {
+    font-size: 0.75em;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.source-link:hover .external-icon {
+    opacity: 1;
+}
+
+/* Source separator */
+.source-separator {
+    color: var(--text-secondary);
+    margin: 0 2px;
+}
+
+/* Plain source (no link) */
+.source-plain {
+    color: var(--text-secondary);
+}
+
 /* Markdown formatting styles */
 .message-content h1,
 .message-content h2,
