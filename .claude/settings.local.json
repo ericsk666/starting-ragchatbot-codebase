@@ -11,7 +11,8 @@
       "Bash(C:/Users/cheng/.local/bin/uv.exe pip install sentence-transformers==5.0.0)",
       "Bash(.venv\\Scripts\\python.exe:*)",
       "Bash(dir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Read(//d/study/starting_codebase/**)"
     ],
     "deny": [],
     "ask": []

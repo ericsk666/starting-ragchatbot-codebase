@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG系统V2.0架构 - 数据流动可视化体验</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 主布局：左侧控制面板，中间流程图，右侧数据面板 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* 左侧控制面板 */
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3 span {
+            font-size: 1.2em;
+        }
+
+        .mode-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 0.95em;
+        }
+
+        .mode-btn:hover {
+            border-color: #2a5298;
+            transform: translateX(5px);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 中间流程可视化区域 */
+        .flow-visualization {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 700px;
+        }
+
+        /* SVG管道系统 */
+        .pipeline-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 流程节点 */
+        .flow-node {
+            fill: #f0f4ff;
+            stroke: #667eea;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .flow-node.active {
+            fill: #667eea;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
+        }
+
+        .flow-node.completed {
+            fill: #d4edda;
+            stroke: #28a745;
+        }
+
+        .flow-node.error {
+            fill: #f8d7da;
+            stroke: #dc3545;
+        }
+
+        .node-text {
+            fill: #333;
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .node-text.active {
+            fill: white;
+            font-weight: bold;
+        }
+
+        /* 数据流动动画 */
+        .data-flow {
+            fill: #ffc107;
+            r: 8;
+            filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.6));
+        }
+
+        @keyframes flowAnimation {
+            0% { offset-distance: 0%; }
+            100% { offset-distance: 100%; }
+        }
+
+        /* 管道连线 */
+        .pipeline-path {
+            fill: none;
+            stroke: #e0e0e0;
+            stroke-width: 3;
+            stroke-dasharray: 5, 5;
+        }
+
+        .pipeline-path.active {
+            stroke: #667eea;
+            stroke-dasharray: none;
+            animation: pulseStroke 1s infinite;
+        }
+
+        @keyframes pulseStroke {
+            0%, 100% { stroke-width: 3; }
+            50% { stroke-width: 5; }
+        }
+
+        /* 右侧数据面板 */
+        .data-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 700px;
+        }
+
+        .data-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-section:last-child {
+            border-bottom: none;
+        }
+
+        .data-section h4 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .data-content {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .data-content.json {
+            color: #2a5298;
+        }
+
+        .data-content.vector {
+            color: #28a745;
+        }
+
+        .data-content.result {
+            color: #dc3545;
+        }
+
+        /* 状态指示器 */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-indicator.waiting {
+            background: #f0f4ff;
+            color: #667eea;
+        }
+
+        .status-indicator.processing {
+            background: #fff3cd;
+            color: #856404;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 阶段标题 */
+        .stage-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        /* 详细解释弹窗 */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            max-width: 300px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* 性能指标 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        .metric-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 路由决策可视化 */
+        .router-decision {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .router-decision h5 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .decision-path {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .decision-node {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .decision-node.selected {
+            background: #28a745;
+            color: white;
+        }
+
+        .decision-node.not-selected {
+            background: #e0e0e0;
+            color: #999;
+        }
+
+        .decision-arrow {
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        /* 模型切换动画 */
+        .model-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .model-card {
+            padding: 15px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .model-card.active {
+            border-color: #667eea;
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .model-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .switch-arrow {
+            font-size: 2em;
+            color: #667eea;
+            animation: slideRight 1s infinite;
+        }
+
+        @keyframes slideRight {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+
+        /* 底部控制栏 */
+        .bottom-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speed-slider {
+            width: 150px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin: 0 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 教学卡片 */
+        .education-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .education-card h5 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .education-card .concept {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .education-card .concept strong {
+            color: #667eea;
+        }
+        
+        /* 架构图 */
+        .architecture-diagram {
+            background: white;
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .architecture-layer {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .architecture-layer .layer-name {
+            font-weight: bold;
+            color: #2a5298;
+        }
+        
+        .architecture-layer .layer-tech {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1400px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel,
+            .data-panel {
+                max-width: 100%;
+            }
+        }
+
+        /* 加载动画 */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 RAG系统V2.0架构 - 数据流动可视化</h1>
+            <p>跟随数据的旅程，体验双模型智能路由的完整处理流程</p>
+            <div style="margin-top: 15px; font-size: 0.95em; opacity: 0.9;">
+                <span style="margin: 0 10px;">📚 课程RAG系统</span>
+                <span style="margin: 0 10px;">🤖 DeepSeek双模型</span>
+                <span style="margin: 0 10px;">🔍 向量语义搜索</span>
+                <span style="margin: 0 10px;">⚡ 实时处理流程</span>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- 左侧控制面板 -->
+            <div class="control-panel">
+                <div class="control-section">
+                    <h3><span>🎮</span> 系统模式</h3>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" onclick="switchMode('dev')">
+                            🛠️ 开发态 - 系统配置
+                            <div style="font-size: 0.8em; color: #666; margin-top: 4px;">初始化系统组件</div>
+                        </button>
+                        <button class="mode-btn" onclick="switchMode('manage')">
+                            📋 管理态 - 文档处理
+                            <div style="font-size: 0.8em; color: #666; margin-top: 4px;">处理课程材料</div>
+                        </button>
+                        <button class="mode-btn" onclick="switchMode('runtime')">
+                            🚀 运行态 - 查询处理
+                            <div style="font-size: 0.8em; color: #666; margin-top: 4px;">V2.0完整流程</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-section" id="runtime-controls" style="display: none;">
+                    <h3><span>🔍</span> 查询输入</h3>
+                    <select class="query-input" id="query-presets" onchange="updateQueryInput()" style="margin-bottom: 8px;">
+                        <option value="Python的基本数据类型有哪些？">📚 课程内容查询（需要搜索）</option>
+                        <option value="什么是编程？">💭 一般知识问答（直接推理）</option>
+                        <option value="Python中如何定义函数？">🔧 编程技术问题（工具调用）</option>
+                    </select>
+                    <input type="text" class="query-input" id="user-query" 
+                           placeholder="输入你的问题..." 
+                           value="Python的基本数据类型有哪些？">
+                    <button class="action-btn" onclick="startQueryProcess()">
+                        开始处理查询
+                    </button>
+                    <div style="margin-top: 10px; padding: 10px; background: #f0f4ff; border-radius: 8px; font-size: 0.85em;">
+                        <strong>💡 提示：</strong>不同类型的查询会触发不同的处理路径
+                    </div>
+                </div>
+
+                <div class="control-section" id="dev-controls">
+                    <h3><span>⚙️</span> 配置参数</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 0.9em; color: #666;">模型选择</label>
+                        <select id="model-provider" class="query-input" onchange="updateModelConfig()">
+                            <option value="deepseek">DeepSeek双模型（V3+R1）</option>
+                            <option value="claude">Claude单模型（后备）</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 0.85em;">
+                        <div><strong>🔧 DeepSeek-V3:</strong> 工具调用专用</div>
+                        <div><strong>🧠 DeepSeek-R1:</strong> 推理整合专用</div>
+                        <div><strong>📋 Claude:</strong> 降级后备方案</div>
+                    </div>
+                    <button class="action-btn" onclick="initializeSystem()">
+                        初始化系统
+                    </button>
+                </div>
+
+                <div class="control-section" id="manage-controls" style="display: none;">
+                    <h3><span>📄</span> 文档管理</h3>
+                    <select class="query-input" id="doc-type" style="margin-bottom: 10px;">
+                        <option value="python">Python编程基础.md</option>
+                        <option value="web">Web开发入门.pdf</option>
+                        <option value="data">数据分析课程.txt</option>
+                    </select>
+                    <button class="action-btn" onclick="processDocument()">
+                        处理课程文档
+                    </button>
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 0.85em;">
+                        <strong>处理流程：</strong><br/>
+                        1. 文档解析提取内容<br/>
+                        2. 分块(500字符, 100重叠)<br/>
+                        3. 向量化(384维)<br/>
+                        4. 存储到ChromaDB
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><span>📊</span> 系统状态</h3>
+                    <div id="system-status">
+                        <span class="status-indicator waiting">
+                            ⏸️ 等待操作
+                        </span>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-value" id="time-metric">0.0s</div>
+                            <div class="metric-label">处理时间</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="token-metric">0</div>
+                            <div class="metric-label">Token数</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="chunks-metric">0</div>
+                            <div class="metric-label">文档块数</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="cost-metric">$0.00</div>
+                            <div class="metric-label">预估成本</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间流程可视化 -->
+            <div class="flow-visualization">
+                <div class="stage-title" id="stage-title">🛠️ 开发态 - 系统初始化</div>
+                
+                <!-- 开发态可视化 -->
+                <div id="dev-flow" class="flow-content">
+                    <!-- 教学卡片：系统初始化 -->
+                    <div class="education-card">
+                        <h5>🎓 系统初始化概念</h5>
+                        <div class="concept">
+                            <strong>Why（为什么）：</strong>系统需要加载配置、连接数据库、初始化模型
+                        </div>
+                        <div class="concept">
+                            <strong>What（是什么）：</strong>读取环境变量、启动各个组件、建立连接
+                        </div>
+                        <div class="concept">
+                            <strong>How（怎么做）：</strong>按顺序加载配置→数据库→嵌入模型→AI接口→路由器
+                        </div>
+                    </div>
+                    
+                    <svg class="pipeline-svg" viewBox="0 0 800 600">
+                        <!-- 配置读取 -->
+                        <rect x="50" y="50" width="120" height="60" rx="10" class="flow-node" id="config-node"/>
+                        <text x="110" y="85" class="node-text">配置读取</text>
+                        
+                        <!-- 向量数据库 -->
+                        <rect x="250" y="50" width="120" height="60" rx="10" class="flow-node" id="vectordb-node"/>
+                        <text x="310" y="85" class="node-text">向量数据库</text>
+                        
+                        <!-- 嵌入模型 -->
+                        <rect x="450" y="50" width="120" height="60" rx="10" class="flow-node" id="embedding-node"/>
+                        <text x="510" y="85" class="node-text">嵌入模型</text>
+                        
+                        <!-- AI模型配置 -->
+                        <rect x="250" y="200" width="120" height="60" rx="10" class="flow-node" id="ai-config-node"/>
+                        <text x="310" y="235" class="node-text">AI模型配置</text>
+                        
+                        <!-- 路由器初始化 -->
+                        <rect x="450" y="200" width="120" height="60" rx="10" class="flow-node" id="router-node"/>
+                        <text x="510" y="235" class="node-text">智能路由器</text>
+                        
+                        <!-- 连接线 -->
+                        <path d="M170,80 L250,80" class="pipeline-path" id="path1"/>
+                        <path d="M370,80 L450,80" class="pipeline-path" id="path2"/>
+                        <path d="M310,110 L310,200" class="pipeline-path" id="path3"/>
+                        <path d="M370,230 L450,230" class="pipeline-path" id="path4"/>
+                    </svg>
+                </div>
+
+                <!-- 管理态可视化 -->
+                <div id="manage-flow" class="flow-content" style="display: none;">
+                    <!-- 教学卡片：文档处理流程 -->
+                    <div class="education-card">
+                        <h5>🎓 文档处理流程</h5>
+                        <div class="concept">
+                            <strong>📥 输入：</strong>课程文档（MD/PDF/TXT格式）
+                        </div>
+                        <div class="concept">
+                            <strong>✂️ 分块：</strong>500字符/块，100字符重叠，保证上下文连贯
+                        </div>
+                        <div class="concept">
+                            <strong>🔢 向量化：</strong>all-MiniLM-L6-v2模型，384维向量空间
+                        </div>
+                        <div class="concept">
+                            <strong>💾 存储：</strong>ChromaDB向量数据库，支持快速相似度搜索
+                        </div>
+                    </div>
+                    
+                    <svg class="pipeline-svg" viewBox="0 0 800 600">
+                        <!-- 文档输入 -->
+                        <rect x="50" y="50" width="120" height="60" rx="10" class="flow-node" id="doc-input-node"/>
+                        <text x="110" y="85" class="node-text">文档输入</text>
+                        
+                        <!-- 文档解析 -->
+                        <rect x="250" y="50" width="120" height="60" rx="10" class="flow-node" id="doc-parse-node"/>
+                        <text x="310" y="85" class="node-text">文档解析</text>
+                        
+                        <!-- 文本分块 -->
+                        <rect x="450" y="50" width="120" height="60" rx="10" class="flow-node" id="chunk-node"/>
+                        <text x="510" y="85" class="node-text">文本分块</text>
+                        
+                        <!-- 向量化 -->
+                        <rect x="650" y="50" width="120" height="60" rx="10" class="flow-node" id="vectorize-node"/>
+                        <text x="710" y="85" class="node-text">向量化</text>
+                        
+                        <!-- 存储 -->
+                        <rect x="350" y="200" width="120" height="60" rx="10" class="flow-node" id="store-node"/>
+                        <text x="410" y="235" class="node-text">数据库存储</text>
+                        
+                        <!-- 连接线 -->
+                        <path d="M170,80 L250,80" class="pipeline-path"/>
+                        <path d="M370,80 L450,80" class="pipeline-path"/>
+                        <path d="M570,80 L650,80" class="pipeline-path"/>
+                        <path d="M710,110 L710,150 L470,150 L470,200 L410,200" class="pipeline-path"/>
+                    </svg>
+                </div>
+
+                <!-- 运行态可视化 - 完整V2.0流程 -->
+                <div id="runtime-flow" class="flow-content" style="display: none;">
+                    <!-- 教学卡片：V2.0架构特性 -->
+                    <div class="education-card">
+                        <h5>🎓 V2.0双模型智能路由架构</h5>
+                        <div class="concept">
+                            <strong>🤖 双模型协同：</strong>
+                            <span style="color: #28a745;">● DeepSeek-V3</span> 工具调用专家 + 
+                            <span style="color: #dc3545;">● DeepSeek-R1</span> 推理整合专家
+                        </div>
+                        <div class="concept">
+                            <strong>🚀 智能路由：</strong>根据任务类型自动选择最优模型路径
+                        </div>
+                        <div class="concept">
+                            <strong>🔄 模型切换：</strong>V3完成工具调用后自动切换到R1进行结果整合
+                        </div>
+                        <div class="concept">
+                            <strong>🛡️ 降级机制：</strong>DeepSeek失败时自动降级到Claude API
+                        </div>
+                    </div>
+                    
+                    <svg class="pipeline-svg" viewBox="0 0 800 600">
+                        <!-- 用户输入 -->
+                        <rect x="50" y="50" width="100" height="50" rx="10" class="flow-node" id="user-input"/>
+                        <text x="100" y="80" class="node-text">用户输入</text>
+                        
+                        <!-- API接收 -->
+                        <rect x="200" y="50" width="100" height="50" rx="10" class="flow-node" id="api-receive"/>
+                        <text x="250" y="80" class="node-text">API接收</text>
+                        
+                        <!-- 会话管理 -->
+                        <rect x="350" y="50" width="100" height="50" rx="10" class="flow-node" id="session-mgmt"/>
+                        <text x="400" y="80" class="node-text">会话管理</text>
+                        
+                        <!-- 工具准备 -->
+                        <rect x="500" y="50" width="100" height="50" rx="10" class="flow-node" id="tool-prep"/>
+                        <text x="550" y="80" class="node-text">工具准备</text>
+                        
+                        <!-- 路由决策 -->
+                        <rect x="325" y="150" width="150" height="50" rx="10" class="flow-node" id="router-decision"/>
+                        <text x="400" y="180" class="node-text">🚦 路由决策</text>
+                        
+                        <!-- 左分支：工具调用路径 -->
+                        <rect x="150" y="250" width="120" height="50" rx="10" class="flow-node" id="model-v3"/>
+                        <text x="210" y="280" class="node-text">DeepSeek-V3</text>
+                        
+                        <rect x="150" y="330" width="120" height="50" rx="10" class="flow-node" id="tool-call"/>
+                        <text x="210" y="360" class="node-text">工具调用</text>
+                        
+                        <rect x="150" y="410" width="120" height="50" rx="10" class="flow-node" id="vector-search"/>
+                        <text x="210" y="440" class="node-text">向量搜索</text>
+                        
+                        <!-- 右分支：直接推理路径 -->
+                        <rect x="480" y="250" width="120" height="50" rx="10" class="flow-node" id="model-r1-direct"/>
+                        <text x="540" y="280" class="node-text">DeepSeek-R1</text>
+                        
+                        <!-- 模型切换 -->
+                        <rect x="325" y="330" width="150" height="50" rx="10" class="flow-node" id="model-switch"/>
+                        <text x="400" y="360" class="node-text">🔄 模型切换</text>
+                        
+                        <!-- 结果整合 -->
+                        <rect x="325" y="410" width="150" height="50" rx="10" class="flow-node" id="result-integrate"/>
+                        <text x="400" y="440" class="node-text">结果整合 R1</text>
+                        
+                        <!-- 最终响应 -->
+                        <rect x="325" y="500" width="150" height="50" rx="10" class="flow-node" id="final-response"/>
+                        <text x="400" y="530" class="node-text">📤 最终响应</text>
+                        
+                        <!-- 连接线 - 主流程 -->
+                        <path d="M150,75 L200,75" class="pipeline-path"/>
+                        <path d="M300,75 L350,75" class="pipeline-path"/>
+                        <path d="M450,75 L500,75" class="pipeline-path"/>
+                        <path d="M550,100 L550,130 L400,130 L400,150" class="pipeline-path"/>
+                        
+                        <!-- 左分支连线 -->
+                        <path d="M325,175 L210,175 L210,250" class="pipeline-path" id="tool-path"/>
+                        <path d="M210,300 L210,330" class="pipeline-path"/>
+                        <path d="M210,380 L210,410" class="pipeline-path"/>
+                        <path d="M270,435 L325,435" class="pipeline-path"/>
+                        
+                        <!-- 右分支连线 -->
+                        <path d="M475,175 L540,175 L540,250" class="pipeline-path" id="direct-path"/>
+                        <path d="M540,300 L540,345 L475,345" class="pipeline-path"/>
+                        
+                        <!-- 模型切换连线 -->
+                        <path d="M270,275 L325,275 L325,330" class="pipeline-path"/>
+                        <path d="M400,380 L400,410" class="pipeline-path"/>
+                        <path d="M400,460 L400,500" class="pipeline-path"/>
+                        
+                        <!-- 数据流动点 -->
+                        <circle class="data-flow" id="data-ball" style="display: none;">
+                            <animateMotion dur="2s" repeatCount="1" fill="freeze">
+                                <mpath href="#flow-path"/>
+                            </animateMotion>
+                        </circle>
+                    </svg>
+                    
+                    <!-- 路由决策详情 -->
+                    <div class="router-decision" id="router-details" style="display: none;">
+                        <h5>🚦 智能路由决策过程</h5>
+                        <div class="decision-path">
+                            <div class="decision-node" id="check-tools">检查工具需求</div>
+                            <span class="decision-arrow">→</span>
+                            <div class="decision-node" id="select-model">选择模型</div>
+                            <span class="decision-arrow">→</span>
+                            <div class="decision-node" id="route-path">确定路径</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 模型切换动画 -->
+                    <div class="model-switch" id="model-switch-viz" style="display: none;">
+                        <div class="model-card" id="v3-card">
+                            <div class="model-icon">🔧</div>
+                            <strong>DeepSeek-V3</strong>
+                            <div style="font-size: 0.9em; color: #666;">工具调用完成</div>
+                        </div>
+                        <span class="switch-arrow">→</span>
+                        <div class="model-card" id="r1-card">
+                            <div class="model-icon">🧠</div>
+                            <strong>DeepSeek-R1</strong>
+                            <div style="font-size: 0.9em; color: #666;">结果整合</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧数据面板 -->
+            <div class="data-panel">
+                <h3 style="margin-bottom: 20px; color: #2a5298;">📊 实时数据监控</h3>
+                
+                <!-- 架构层次显示 -->
+                <div id="architecture-layers" style="display: none;">
+                    <div class="architecture-diagram">
+                        <h5 style="color: #2a5298; margin-bottom: 15px;">🏗️ 系统架构层次</h5>
+                        <div class="architecture-layer">
+                            <span class="layer-name">🌐 API层</span>
+                            <span class="layer-tech">FastAPI + Uvicorn</span>
+                        </div>
+                        <div class="architecture-layer">
+                            <span class="layer-name">🧠 AI层</span>
+                            <span class="layer-tech">DeepSeek R1/V3</span>
+                        </div>
+                        <div class="architecture-layer">
+                            <span class="layer-name">🔍 搜索层</span>
+                            <span class="layer-tech">Vector Search</span>
+                        </div>
+                        <div class="architecture-layer">
+                            <span class="layer-name">🗌️ 存储层</span>
+                            <span class="layer-tech">ChromaDB</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 当前数据 -->
+                <div class="data-section">
+                    <h4><span>📥</span> 输入数据</h4>
+                    <div class="data-content" id="input-data">
+                        等待输入...
+                    </div>
+                </div>
+                
+                <!-- 处理中数据 -->
+                <div class="data-section">
+                    <h4><span>⚙️</span> 处理中</h4>
+                    <div class="data-content json" id="processing-data">
+                        等待处理...
+                    </div>
+                </div>
+                
+                <!-- 向量数据 -->
+                <div class="data-section" id="vector-section" style="display: none;">
+                    <h4><span>🔢</span> 向量表示</h4>
+                    <div class="data-content vector" id="vector-data">
+                        等待向量化...
+                    </div>
+                </div>
+                
+                <!-- 搜索结果 -->
+                <div class="data-section" id="search-section" style="display: none;">
+                    <h4><span>🔍</span> 搜索结果</h4>
+                    <div class="data-content" id="search-results">
+                        等待搜索...
+                    </div>
+                </div>
+                
+                <!-- 输出数据 -->
+                <div class="data-section">
+                    <h4><span>📤</span> 输出结果</h4>
+                    <div class="data-content result" id="output-data">
+                        等待输出...
+                    </div>
+                </div>
+                
+                <!-- 日志 -->
+                <div class="data-section">
+                    <h4><span>📝</span> 处理日志</h4>
+                    <div class="data-content" id="process-log" style="max-height: 150px;">
+                        [系统] 准备就绪
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="bottom-controls">
+            <div class="speed-control">
+                <label>动画速度：</label>
+                <input type="range" class="speed-slider" id="speed-slider" 
+                       min="0.5" max="2" step="0.5" value="1">
+                <span id="speed-label">1.0x</span>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            
+            <div>
+                <button class="action-btn" style="padding: 8px 20px;" onclick="resetDemo()">
+                    🔄 重置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // 全局状态管理
+        let currentMode = 'dev';
+        let isProcessing = false;
+        let animationSpeed = 1.0;
+        let processSteps = [];
+        let currentStep = 0;
+        let startTime = 0;
+        let dataFlow = {};
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 速度控制
+            const speedSlider = document.getElementById('speed-slider');
+            speedSlider.addEventListener('input', (e) => {
+                animationSpeed = parseFloat(e.target.value);
+                document.getElementById('speed-label').textContent = animationSpeed + 'x';
+            });
+
+            // 添加节点悬停提示
+            addNodeTooltips();
+            
+            // 初始化日志
+            addLog('系统初始化完成', 'success');
+            addLog('🎓 欢迎使用RAG系统V2.0可视化演示', 'info');
+            addLog('💡 选择不同模式体验完整数据流程', 'info');
+        });
+        
+        // 更新查询输入
+        function updateQueryInput() {
+            const preset = document.getElementById('query-presets').value;
+            document.getElementById('user-query').value = preset;
+        }
+
+        // 切换模式
+        function switchMode(mode) {
+            if (isProcessing) return;
+            
+            currentMode = mode;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 隐藏架构层次（仅在运行态显示）
+            document.getElementById('architecture-layers').style.display = 'none';
+            
+            // 更新控制面板
+            document.getElementById('dev-controls').style.display = mode === 'dev' ? 'block' : 'none';
+            document.getElementById('manage-controls').style.display = mode === 'manage' ? 'block' : 'none';
+            document.getElementById('runtime-controls').style.display = mode === 'runtime' ? 'block' : 'none';
+            
+            // 更新流程图
+            document.getElementById('dev-flow').style.display = mode === 'dev' ? 'block' : 'none';
+            document.getElementById('manage-flow').style.display = mode === 'manage' ? 'block' : 'none';
+            document.getElementById('runtime-flow').style.display = mode === 'runtime' ? 'block' : 'none';
+            
+            // 更新标题
+            const titles = {
+                'dev': '🛠️ 开发态 - 系统初始化',
+                'manage': '📋 管理态 - 文档处理',
+                'runtime': '🚀 运行态 - 查询处理'
+            };
+            document.getElementById('stage-title').textContent = titles[mode];
+            
+            // 重置节点状态
+            resetNodes();
+            
+            addLog(`切换到${titles[mode]}`, 'info');
+            
+            // 根据模式显示不同的教学内容
+            if (mode === 'runtime') {
+                addLog('🎓 运行态将展示完整的V2.0双模型处理流程', 'info');
+                addLog('💡 包括11个处理步骤和智能路由决策', 'info');
+            } else if (mode === 'dev') {
+                addLog('🔧 开发态将展示系统组件初始化过程', 'info');
+            } else if (mode === 'manage') {
+                addLog('📁 管理态将展示文档处理和向量化流程', 'info');
+            }
+        }
+
+        // 开发态：初始化系统
+        function initializeSystem() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            updateStatus('processing', '初始化中...');
+            startTime = Date.now();
+            
+            addLog('🔄 开始系统初始化流程', 'info');
+            
+            const steps = [
+                { 
+                    node: 'config-node', 
+                    data: { 
+                        'LLM_PROVIDER': 'deepseek',
+                        'MODEL_REASON': 'DeepSeek-R1',
+                        'MODEL_TOOLCALL': 'DeepSeek-V3',
+                        'ANTHROPIC_API_KEY': 'claude_backup'
+                    }, 
+                    log: '📄 读取.env配置文件',
+                    delay: 500 
+                },
+                { 
+                    node: 'vectordb-node', 
+                    data: { 
+                        type: 'ChromaDB', 
+                        path: './chroma_db',
+                        collections: ['course_content', 'metadata']
+                    }, 
+                    log: '🗌️ 初始化向量数据库',
+                    delay: 800 
+                },
+                { 
+                    node: 'embedding-node', 
+                    data: { 
+                        model: 'all-MiniLM-L6-v2', 
+                        dimensions: 384,
+                        max_length: 256
+                    }, 
+                    log: '🔢 加载嵌入模型',
+                    delay: 600 
+                },
+                { 
+                    node: 'ai-config-node', 
+                    data: { 
+                        api_key: 'sk-xxxxx...', 
+                        base_url: 'https://api.deepseek.com/v1',
+                        timeout: 30
+                    }, 
+                    log: '🤖 配置AI模型接口',
+                    delay: 700 
+                },
+                { 
+                    node: 'router-node', 
+                    data: { 
+                        strategy: 'task-based', 
+                        models: ['V3-tools', 'R1-reasoning'],
+                        fallback: 'Claude'
+                    }, 
+                    log: '🚀 启动智能路由器',
+                    delay: 900 
+                }
+            ];
+            
+            processSequence(steps, () => {
+                updateStatus('completed', '系统初始化完成');
+                updateMetrics({ time: ((Date.now() - startTime) / 1000).toFixed(1) });
+                addLog('✅ 系统初始化成功', 'success');
+            });
+        }
+
+        // 管理态：处理文档
+        function processDocument() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            updateStatus('processing', '处理文档中...');
+            startTime = Date.now();
+            
+            const docType = document.getElementById('doc-type').value;
+            const docContents = {
+                'python': `Course Title: Python编程基础
+Course Instructor: 张老师
+Lesson 1: 数据类型
+Python的基本数据类型包括：
+- 整数(int): 如 42, -10
+- 浮点数(float): 如 3.14, -0.001
+- 字符串(str): 如 "Hello", 'Python'
+- 布尔值(bool): True, False`,
+                'web': `Course Title: Web开发入门
+HTML、CSS、JavaScript基础...`,
+                'data': `Course Title: 数据分析课程
+NumPy、Pandas、Matplotlib应用...`
+            };
+            
+            const sampleDoc = docContents[docType];
+            
+            addLog(`📁 开始处理${docType}文档`, 'info');
+            
+            const steps = [
+                { 
+                    node: 'doc-input-node', 
+                    data: sampleDoc, 
+                    log: '📥 接收文档内容',
+                    delay: 500 
+                },
+                { 
+                    node: 'doc-parse-node', 
+                    data: { 
+                        title: '课程标题提取成功',
+                        metadata: {
+                            instructor: '讲师信息',
+                            lessons: '课程章节'
+                        }
+                    }, 
+                    log: '🔍 解析文档结构',
+                    delay: 800 
+                },
+                { 
+                    node: 'chunk-node', 
+                    data: { 
+                        chunks: 5, 
+                        chunk_size: 500,
+                        overlap: 100,
+                        strategy: 'recursive_character'
+                    }, 
+                    log: '✂️ 文本分块处理(500字符/块)',
+                    delay: 1000 
+                },
+                { 
+                    node: 'vectorize-node', 
+                    data: { 
+                        vectors: '[[0.23, -0.45, 0.67, ...], [0.12, 0.89, -0.34, ...], ...]',
+                        model: 'all-MiniLM-L6-v2',
+                        dimensions: 384
+                    }, 
+                    log: '🔢 生成384维向量表示',
+                    delay: 1200 
+                },
+                { 
+                    node: 'store-node', 
+                    data: { 
+                        stored_chunks: 5,
+                        collection: 'course_content',
+                        index_type: 'cosine_similarity'
+                    }, 
+                    log: '💾 存储到向量数据库',
+                    delay: 600 
+                }
+            ];
+            
+            processSequence(steps, () => {
+                updateStatus('completed', '文档处理完成');
+                updateMetrics({ 
+                    time: ((Date.now() - startTime) / 1000).toFixed(1),
+                    chunks: 5
+                });
+                addLog('✅ 文档处理成功，已存储5个文本块', 'success');
+            });
+        }
+
+        // 运行态：处理查询 - 完整V2.0流程
+        function startQueryProcess() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            const query = document.getElementById('user-query').value;
+            updateStatus('processing', '处理查询中...');
+            startTime = Date.now();
+            
+            // 显示路由决策和模型切换组件
+            document.getElementById('router-details').style.display = 'block';
+            document.getElementById('vector-section').style.display = 'block';
+            document.getElementById('search-section').style.display = 'block';
+            
+            // 更新输入数据显示
+            document.getElementById('input-data').innerHTML = `
+<strong>🔍 用户查询：</strong>
+${query}
+
+<strong>🆔 会话 ID：</strong>
+session_abc123
+
+<strong>⏰ 时间戳：</strong>
+${new Date().toLocaleString()}`;
+            
+            addLog(`🎯 开始处理查询: "${query}"`, 'info');
+            
+            // 显示架构层次
+            document.getElementById('architecture-layers').style.display = 'block';
+            
+            // V2.0完整处理流程 - 11步完整流程
+            const steps = [
+                // 1. 用户输入
+                { 
+                    node: 'user-input', 
+                    data: { query: query },
+                    log: '接收用户查询',
+                    delay: 300 
+                },
+                // 2. API接收
+                { 
+                    node: 'api-receive', 
+                    data: { method: 'POST /api/query', body: { query, session_id: 'abc123' } },
+                    log: 'FastAPI接收请求',
+                    delay: 400 
+                },
+                // 3. 会话管理
+                { 
+                    node: 'session-mgmt', 
+                    data: { history: '[]', session_id: 'abc123' },
+                    log: '获取会话历史',
+                    delay: 500 
+                },
+                // 4. 工具准备
+                { 
+                    node: 'tool-prep', 
+                    data: { tools: ['search_course'], format: 'OpenAI' },
+                    log: '准备工具定义（格式转换）',
+                    delay: 600 
+                },
+                // 5. 路由决策 - 核心
+                { 
+                    node: 'router-decision', 
+                    data: { decision: 'need_tool_call', reason: '查询包含课程内容问题' },
+                    log: '🚦 智能路由决策：需要工具调用',
+                    callback: () => showRouterDecision(true),
+                    delay: 800 
+                },
+                // 6. 选择V3模型
+                { 
+                    node: 'model-v3', 
+                    data: { model: 'DeepSeek-V3', task: 'tool_calling' },
+                    log: '选择DeepSeek-V3处理工具调用',
+                    delay: 700 
+                },
+                // 7. 工具调用
+                { 
+                    node: 'tool-call', 
+                    data: { tool: 'search_course', args: { query: 'Python数据类型' } },
+                    log: '执行搜索工具',
+                    delay: 900 
+                },
+                // 8. 向量搜索
+                { 
+                    node: 'vector-search', 
+                    data: { 
+                        results: [
+                            { chunk: '基本数据类型包括：int, float, str, bool', score: 0.92 },
+                            { chunk: '变量是存储数据的容器', score: 0.85 }
+                        ]
+                    },
+                    log: '向量数据库搜索完成',
+                    callback: () => updateSearchResults(),
+                    delay: 1000 
+                },
+                // 9. 模型切换
+                { 
+                    node: 'model-switch', 
+                    data: { from: 'V3', to: 'R1', reason: '需要整合搜索结果' },
+                    log: '🔄 模型切换：V3 → R1',
+                    callback: () => showModelSwitch(),
+                    delay: 800 
+                },
+                // 10. 结果整合
+                { 
+                    node: 'result-integrate', 
+                    data: { model: 'DeepSeek-R1', task: 'reasoning' },
+                    log: 'R1模型整合搜索结果',
+                    delay: 1200 
+                },
+                // 11. 最终响应
+                { 
+                    node: 'final-response', 
+                    data: { 
+                        answer: 'Python的基本数据类型包括：整数(int)、浮点数(float)、字符串(str)、布尔值(bool)。',
+                        sources: ['Python编程基础 - Lesson 1'],
+                        confidence: 0.95,
+                        model_path: 'V3(工具) → R1(推理)'
+                    },
+                    log: '✅ 生成最终答案',
+                    callback: () => showFinalResponse(),
+                    delay: 600 
+                }
+            ];
+            
+            processSequence(steps, () => {
+                updateStatus('completed', '查询处理完成');
+                const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                updateMetrics({ 
+                    time: totalTime,
+                    tokens: 250,
+                    cost: 0.005
+                });
+                
+                addLog(`✅ 查询处理完成，耗时 ${totalTime}秒`, 'success');
+                addLog(`📊 处理路径: V3(工具) → R1(推理)`, 'info');
+                addLog(`🏆 V2.0双模型架构成功完成任务`, 'success');
+                
+                // 隐藏架构层次
+                setTimeout(() => {
+                    document.getElementById('architecture-layers').style.display = 'none';
+                }, 3000);
+            });
+        }
+
+        // 显示路由决策过程
+        function showRouterDecision(needTool) {
+            const nodes = ['check-tools', 'select-model', 'route-path'];
+            nodes.forEach((nodeId, index) => {
+                setTimeout(() => {
+                    const node = document.getElementById(nodeId);
+                    node.classList.add('selected');
+                    
+                    if (nodeId === 'select-model') {
+                        node.textContent = needTool ? '选择 V3' : '选择 R1';
+                    } else if (nodeId === 'route-path') {
+                        node.textContent = needTool ? '工具调用路径' : '直接推理路径';
+                    }
+                }, index * 300 / animationSpeed);
+            });
+        }
+
+        // 显示模型切换动画
+        function showModelSwitch() {
+            const switchViz = document.getElementById('model-switch-viz');
+            switchViz.style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('v3-card').classList.add('active');
+            }, 200 / animationSpeed);
+            
+            setTimeout(() => {
+                document.getElementById('v3-card').classList.remove('active');
+                document.getElementById('r1-card').classList.add('active');
+            }, 800 / animationSpeed);
+            
+            setTimeout(() => {
+                switchViz.style.display = 'none';
+                document.getElementById('r1-card').classList.remove('active');
+            }, 2000 / animationSpeed);
+        }
+
+        // 更新搜索结果
+        function updateSearchResults() {
+            const results = [
+                { 
+                    text: 'Python的基本数据类型包括：整数(int)、浮点数(float)、字符串(str)、布尔值(bool)', 
+                    score: 0.92,
+                    source: 'Lesson 1: 数据类型'
+                },
+                { 
+                    text: '在Python中，变量是存储数据的容器，可以存储不同类型的数据', 
+                    score: 0.85,
+                    source: 'Lesson 2: 变量'
+                },
+                { 
+                    text: '类型转换函数：int(), float(), str(), bool()', 
+                    score: 0.73,
+                    source: 'Lesson 3: 类型转换'
+                }
+            ];
+            
+            let html = '<strong>🔍 向量搜索结果：</strong>\n\n';
+            results.forEach((r, i) => {
+                html += `${i+1}. [相似度: ${r.score}] ${r.source}\n   ${r.text}\n\n`;
+            });
+            
+            document.getElementById('search-results').textContent = html;
+            
+            // 更新向量数据显示
+            document.getElementById('vector-data').innerHTML = `
+<strong>🔢 查询向量：</strong>
+[0.23, -0.45, 0.67, 0.12, ..., 0.89] (384维)
+
+<strong>🎯 匹配策略：</strong>
+余弦相似度 (Cosine Similarity)
+
+<strong>🔝 Top-K：</strong>
+返回前3个最相关结果`;
+        }
+        
+        // 显示最终响应
+        function showFinalResponse() {
+            const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('output-data').innerHTML = `
+<strong>🤖 AI生成答案：</strong>
+
+Python的基本数据类型包括：
+
+1. <strong>整数(int)</strong> - 整数值
+   示例: 42, -10, 0
+   
+2. <strong>浮点数(float)</strong> - 小数值
+   示例: 3.14, -0.001, 2.0
+   
+3. <strong>字符串(str)</strong> - 文本数据
+   示例: "Hello", 'Python', '''text'''
+   
+4. <strong>布尔值(bool)</strong> - 真/假值
+   值: True, False
+
+<strong>📖 信息来源：</strong>
+Python编程基础 - Lesson 1: 数据类型
+
+<strong>🔄 处理路径：</strong>
+DeepSeek-V3(工具调用) → DeepSeek-R1(结果整合)
+
+<strong>📊 统计信息：</strong>
+• 置信度: 95%
+• 处理时间: ${totalTime}秒
+• 搜索命中: 3个相关文档块`;
+        }
+
+        // 处理步骤序列
+        function processSequence(steps, callback) {
+            let index = 0;
+            
+            function processNext() {
+                if (index >= steps.length) {
+                    isProcessing = false;
+                    if (callback) callback();
+                    return;
+                }
+                
+                const step = steps[index];
+                
+                // 激活节点
+                const node = document.getElementById(step.node);
+                if (node) {
+                    // 清除之前的状态
+                    document.querySelectorAll('.flow-node').forEach(n => {
+                        if (n.id !== step.node && !n.classList.contains('completed')) {
+                            n.classList.remove('active');
+                        }
+                    });
+                    
+                    node.classList.add('active');
+                    
+                    // 更新对应的文本
+                    const textNode = node.nextElementSibling;
+                    if (textNode && textNode.classList.contains('node-text')) {
+                        textNode.classList.add('active');
+                    }
+                }
+                
+                // 更新数据面板
+                updateDataPanel(step.node, step.data);
+                
+                // 添加日志
+                if (step.log) {
+                    addLog(step.log, 'info');
+                }
+                
+                // 执行回调
+                if (step.callback) {
+                    step.callback();
+                }
+                
+                // 更新进度
+                updateProgress((index + 1) / steps.length * 100);
+                
+                // 设置完成状态并处理下一步
+                setTimeout(() => {
+                    if (node) {
+                        node.classList.remove('active');
+                        node.classList.add('completed');
+                        
+                        const textNode = node.nextElementSibling;
+                        if (textNode && textNode.classList.contains('node-text')) {
+                            textNode.classList.remove('active');
+                        }
+                    }
+                    
+                    index++;
+                    processNext();
+                }, step.delay / animationSpeed);
+            }
+            
+            processNext();
+        }
+
+        // 更新数据面板
+        function updateDataPanel(nodeId, data) {
+            const inputEl = document.getElementById('input-data');
+            const processingEl = document.getElementById('processing-data');
+            const vectorEl = document.getElementById('vector-data');
+            const outputEl = document.getElementById('output-data');
+            
+            // 根据节点更新不同的数据区域
+            if (nodeId.includes('input') || nodeId === 'user-input') {
+                inputEl.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+            } else if (nodeId.includes('vector')) {
+                vectorEl.textContent = JSON.stringify(data, null, 2);
+            } else if (nodeId.includes('final') || nodeId.includes('response')) {
+                // 输出数据在完成回调中处理
+            } else {
+                processingEl.textContent = JSON.stringify(data, null, 2);
+            }
+        }
+
+        // 更新状态
+        function updateStatus(status, text) {
+            const statusEl = document.getElementById('system-status');
+            const statusMap = {
+                'waiting': '⏸️ 等待操作',
+                'processing': '⚙️ ' + (text || '处理中...'),
+                'completed': '✅ ' + (text || '完成'),
+                'error': '❌ ' + (text || '错误')
+            };
+            
+            statusEl.innerHTML = `<span class="status-indicator ${status}">${statusMap[status]}</span>`;
+        }
+
+        // 更新指标
+        function updateMetrics(metrics) {
+            if (metrics.time !== undefined) {
+                document.getElementById('time-metric').textContent = metrics.time + 's';
+            }
+            if (metrics.tokens !== undefined) {
+                document.getElementById('token-metric').textContent = metrics.tokens;
+            }
+            if (metrics.chunks !== undefined) {
+                document.getElementById('chunks-metric').textContent = metrics.chunks;
+            }
+            if (metrics.cost !== undefined) {
+                document.getElementById('cost-metric').textContent = '$' + metrics.cost.toFixed(3);
+            }
+        }
+
+        // 更新进度条
+        function updateProgress(percent) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+        }
+
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const logEl = document.getElementById('process-log');
+            const time = new Date().toLocaleTimeString();
+            const icons = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'warning': '⚠️',
+                'error': '❌'
+            };
+            
+            const logEntry = `[${time}] ${icons[type]} ${message}\n`;
+            logEl.textContent = logEntry + logEl.textContent;
+            
+            // 限制日志长度
+            const lines = logEl.textContent.split('\n');
+            if (lines.length > 20) {
+                logEl.textContent = lines.slice(0, 20).join('\n');
+            }
+        }
+
+        // 重置节点状态
+        function resetNodes() {
+            document.querySelectorAll('.flow-node').forEach(node => {
+                node.classList.remove('active', 'completed', 'error');
+            });
+            document.querySelectorAll('.node-text').forEach(text => {
+                text.classList.remove('active');
+            });
+            document.querySelectorAll('.pipeline-path').forEach(path => {
+                path.classList.remove('active');
+            });
+            
+            // 隐藏特殊组件
+            document.getElementById('router-details').style.display = 'none';
+            document.getElementById('model-switch-viz').style.display = 'none';
+            
+            // 重置决策节点
+            document.querySelectorAll('.decision-node').forEach(node => {
+                node.classList.remove('selected', 'not-selected');
+            });
+            
+            updateProgress(0);
+        }
+
+        // 重置演示
+        function resetDemo() {
+            isProcessing = false;
+            currentStep = 0;
+            
+            resetNodes();
+            updateStatus('waiting');
+            updateMetrics({ time: 0, tokens: 0, chunks: 0, cost: 0 });
+            
+            // 清空数据面板
+            document.getElementById('input-data').textContent = '等待输入...';
+            document.getElementById('processing-data').textContent = '等待处理...';
+            document.getElementById('vector-data').textContent = '等待向量化...';
+            document.getElementById('search-results').textContent = '等待搜索...';
+            document.getElementById('output-data').textContent = '等待输出...';
+            
+            addLog('🔄 系统已重置', 'info');
+        }
+
+        // 添加节点提示
+        function addNodeTooltips() {
+            const tooltips = {
+                // 开发态节点
+                'config-node': '📄 配置读取\n读取.env文件中的配置：\n• LLM_PROVIDER: 模型提供商\n• API密钥和端点\n• 模型选择参数',
+                'vectordb-node': '🗌️ ChromaDB数据库\n向量数据库初始化：\n• 创建collection\n• 设置索引类型\n• 准备存储空间',
+                'embedding-node': '🔢 嵌入模型\nall-MiniLM-L6-v2：\n• 384维向量输出\n• 多语言支持\n• 高效语义理解',
+                'ai-config-node': '🤖 AI模型配置\n设置模型参数：\n• API基础URL\n• 超时设置\n• 重试策略',
+                'router-node': '🚀 智能路由器\n任务路由策略：\n• 工具调用→V3\n• 直接推理→R1\n• 降级机制→Claude',
+                
+                // 管理态节点
+                'doc-input-node': '📥 文档输入\n支持格式：\n• Markdown (.md)\n• PDF文档\n• 纯文本 (.txt)',
+                'doc-parse-node': '🔍 文档解析\n提取内容：\n• 标题和元数据\n• 章节结构\n• 正文内容',
+                'chunk-node': '✂️ 文本分块\n分块策略：\n• 每块500字符\n• 100字符重叠\n• 保持语义完整',
+                'vectorize-node': '🔢 向量化\n转换过程：\n• 文本→Token\n• Token→向量\n• 384维输出',
+                'store-node': '💾 数据存储\n存储到ChromaDB：\n• 向量索引\n• 元数据关联\n• 支持快速检索',
+                
+                // 运行态节点
+                'user-input': '🔍 用户输入\n接收用户查询\n准备处理流程',
+                'api-receive': '🌐 API接收\nFastAPI端点：\nPOST /api/query',
+                'session-mgmt': '📋 会话管理\n维护对话上下文\n跟踪历史记录',
+                'tool-prep': '🔧 工具准备\n格式转换：\nClaude↔OpenAI',
+                'router-decision': '😦 路由决策\n智能判断：\n• 需要搜索→V3\n• 直接回答→R1',
+                'model-v3': '🔧 DeepSeek-V3\n工具调用专家：\n• 函数调用\n• 参数提取\n• API交互',
+                'model-r1-direct': '🧠 DeepSeek-R1\n推理专家：\n• 深度思考\n• 逻辑推理\n• 结果整合',
+                'tool-call': '🛠️ 工具调用\n执行search_course\n传递查询参数',
+                'vector-search': '🔍 向量搜索\n余弦相似度计算\n返回Top-K结果',
+                'model-switch': '🔄 模型切换\nV3→R1切换：\n从工具模式\n切换到推理模式',
+                'result-integrate': '🧩 结果整合\nR1整合处理：\n• 分析搜索结果\n• 组织答案\n• 添加来源',
+                'final-response': '📤 最终响应\n返回给用户：\n• 答案内容\n• 信息来源\n• 处理路径'
+            };
+            
+            Object.keys(tooltips).forEach(nodeId => {
+                const node = document.getElementById(nodeId);
+                if (node) {
+                    node.addEventListener('mouseenter', (e) => {
+                        showTooltip(e, tooltips[nodeId]);
+                    });
+                    node.addEventListener('mouseleave', hideTooltip);
+                }
+            });
+        }
+
+        // 显示提示框
+        function showTooltip(event, text) {
+            const tooltip = document.getElementById('tooltip');
+            // 支持多行文本
+            tooltip.innerHTML = text.replace(/\n/g, '<br>');
+            
+            // 计算位置，避免超出屏幕
+            const x = event.pageX;
+            const y = event.pageY - 40;
+            
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+            tooltip.classList.add('show');
+        }
+
+        // 隐藏提示框
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('show');
+        }
+
+        // 更新模型配置
+        function updateModelConfig() {
+            const provider = document.getElementById('model-provider').value;
+            addLog(`切换到 ${provider} 模型配置`, 'info');
+        }
+    </script>
+</body>
+</html>

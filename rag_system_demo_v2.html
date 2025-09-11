@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG系统深度解析 - 交互式学习体验</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 3px solid #e9ecef;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1em;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: -3px;
+        }
+
+        .tab-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .content {
+            padding: 40px;
+            min-height: 600px;
+        }
+
+        .stage {
+            display: none;
+        }
+
+        .stage.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-container {
+            margin-bottom: 30px;
+        }
+
+        .step-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .demo-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 改进的代码块样式 */
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .code-block .comment {
+            color: #6a9955;
+        }
+
+        .code-block .keyword {
+            color: #c586c0;
+        }
+
+        .code-block .string {
+            color: #ce9178;
+        }
+
+        .code-block .number {
+            color: #b5cea8;
+        }
+
+        /* Why-What-How 解释框 */
+        .explanation-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .explanation-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .exp-tab {
+            padding: 10px 20px;
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .exp-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .exp-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .exp-content.active {
+            display: block;
+        }
+
+        .exp-content h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .exp-content ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        /* 详细解释弹窗 */
+        .detail-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .detail-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        /* 向量显示改进 */
+        .vector-display {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vector-row {
+            margin: 10px 0;
+            opacity: 0;
+            animation: fadeInRow 0.5s forwards;
+        }
+
+        @keyframes fadeInRow {
+            to { opacity: 1; }
+        }
+
+        /* 数据流动画 */
+        .flow-container {
+            position: relative;
+            height: 150px;
+            margin: 30px 0;
+        }
+
+        .flow-node {
+            position: absolute;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .flow-node.active {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .flow-arrow {
+            position: absolute;
+            width: 50px;
+            height: 2px;
+            background: #667eea;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .flow-arrow::after {
+            content: '▶';
+            position: absolute;
+            right: -10px;
+            top: -8px;
+            color: #667eea;
+        }
+
+        /* 比较表格 */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* 性能指标 */
+        .metrics-panel {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            flex: 1;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* 控制面板改进 */
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speed-slider {
+            width: 150px;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn.secondary:hover {
+            background: #f0f4ff;
+        }
+
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 进度指示器 */
+        .progress-indicator {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .progress-dot.active {
+            background: #667eea;
+            transform: scale(1.5);
+        }
+
+        .progress-dot.completed {
+            background: #28a745;
+        }
+
+        /* 提示信息 */
+        .info-tip {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .info-tip-icon {
+            font-size: 1.5em;
+            color: #2196F3;
+        }
+
+        .info-tip-content h4 {
+            color: #2196F3;
+            margin-bottom: 5px;
+        }
+
+        /* 分块可视化 */
+        .chunk-visualization {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .chunk-item {
+            background: white;
+            border: 2px dashed #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            flex: 0 0 calc(33.333% - 10px);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .chunk-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .chunk-item.active {
+            background: #fff3cd;
+            border-color: #28a745;
+            border-style: solid;
+        }
+
+        .chunk-number {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #ffc107;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .chunk-item {
+                flex: 0 0 100%;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #667eea;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 键盘快捷键提示 */
+        .keyboard-shortcuts {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .keyboard-shortcuts.show {
+            display: block;
+        }
+
+        .shortcut-item {
+            margin: 5px 0;
+        }
+
+        .shortcut-key {
+            background: #667eea;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 RAG系统深度解析</h1>
+            <p>从原理到实践，深入理解检索增强生成系统</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('dev')">
+                <span class="tab-icon">🛠️</span>开发态
+            </div>
+            <div class="tab" onclick="switchTab('manage')">
+                <span class="tab-icon">📋</span>管理态
+            </div>
+            <div class="tab" onclick="switchTab('runtime')">
+                <span class="tab-icon">🚀</span>运行态
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 开发态 -->
+            <div id="dev" class="stage active">
+                <div class="step-container">
+                    <div class="step-title">
+                        <div class="step-number">1</div>
+                        环境配置 - 系统基础搭建
+                    </div>
+                    
+                    <div class="info-tip">
+                        <span class="info-tip-icon">💡</span>
+                        <div class="info-tip-content">
+                            <h4>什么是开发态？</h4>
+                            <p>开发态是RAG系统的搭建阶段，就像建房子要先打地基、准备材料一样。我们需要配置必要的API密钥、选择合适的模型、设置数据库路径等。</p>
+                        </div>
+                    </div>
+
+                    <div class="demo-area">
+                        <h3>📝 环境配置文件 (.env)</h3>
+                        <p style="margin-bottom: 15px;">首先创建配置文件，这是系统的"身份证"和"说明书"</p>
+                        
+                        <div class="code-block" id="env-config">
+<span class="comment"># AI模型配置</span>
+<span class="keyword">LLM_PROVIDER</span>=<span class="string">deepseek</span>        <span class="comment"># 选择AI提供商（deepseek/claude）</span>
+<span class="keyword">LLM_API_KEY</span>=<span class="string">sk-xxxxxxxxxxxxxxxx</span>  <span class="comment"># 你的API密钥（需要申请）</span>
+<span class="keyword">LLM_BASE_URL</span>=<span class="string">https://llm.chutes.ai/v1</span>  <span class="comment"># API服务地址</span>
+
+<span class="comment"># 双模型配置 - 为什么需要两个模型？</span>
+<span class="keyword">MODEL_REASON</span>=<span class="string">deepseek-ai/DeepSeek-R1</span>    <span class="comment"># 推理模型：擅长分析和解释</span>
+<span class="keyword">MODEL_TOOLCALL</span>=<span class="string">deepseek-ai/DeepSeek-V3</span>  <span class="comment"># 工具模型：擅长调用搜索功能</span>
+
+<span class="comment"># 向量数据库配置</span>
+<span class="keyword">CHROMA_PATH</span>=<span class="string">./chroma_db</span>           <span class="comment"># 数据库存储位置</span>
+<span class="keyword">EMBEDDING_MODEL</span>=<span class="string">all-MiniLM-L6-v2</span>  <span class="comment"># 文本转向量的模型</span>
+
+<span class="comment"># 处理参数 - 如何切分文档？</span>
+<span class="keyword">CHUNK_SIZE</span>=<span class="number">500</span>      <span class="comment"># 每块的大小（字符数）</span>
+<span class="keyword">CHUNK_OVERLAP</span>=<span class="number">100</span>   <span class="comment"># 块之间的重叠（保持上下文）</span>
+<span class="keyword">MAX_RESULTS</span>=<span class="number">5</span>       <span class="comment"># 返回最相似的结果数</span>
+                        </div>
+                        
+                        <button class="btn secondary" onclick="showConfigDetails()">
+                            <span>📖</span> 深入理解配置
+                        </button>
+                    </div>
+
+                    <div class="demo-area">
+                        <h3>🔧 核心组件初始化</h3>
+                        <p style="margin-bottom: 15px;">三大核心组件，缺一不可</p>
+                        
+                        <!-- Why-What-How 解释框 -->
+                        <div class="explanation-box">
+                            <div class="explanation-tabs">
+                                <div class="exp-tab active" onclick="showExplanation('dev-why')">为什么 (Why)</div>
+                                <div class="exp-tab" onclick="showExplanation('dev-what')">是什么 (What)</div>
+                                <div class="exp-tab" onclick="showExplanation('dev-how')">怎么做 (How)</div>
+                            </div>
+                            
+                            <div id="dev-why" class="exp-content active">
+                                <h4>🤔 为什么需要这些组件？</h4>
+                                <ul>
+                                    <li><strong>向量数据库</strong>：传统数据库只能精确匹配关键词，无法理解"Python"和"派森"是同一个东西。向量数据库可以理解语义相似性。</li>
+                                    <li><strong>嵌入模型</strong>：计算机不懂人类语言，需要转换成数字（向量）才能计算。就像把中文翻译成计算机能懂的"数字语言"。</li>
+                                    <li><strong>AI双模型</strong>：就像医院有专科医生，不同模型擅长不同任务。R1擅长推理分析，V3擅长工具调用。</li>
+                                </ul>
+                            </div>
+                            
+                            <div id="dev-what" class="exp-content">
+                                <h4>📚 这些组件是什么？</h4>
+                                <ul>
+                                    <li><strong>ChromaDB</strong>：开源的向量数据库，可以存储和快速检索向量。支持持久化存储，重启不丢失数据。</li>
+                                    <li><strong>MiniLM-L6</strong>：轻量级语言模型（25MB），将文本转换为384维向量。支持多语言，速度快。</li>
+                                    <li><strong>DeepSeek双模型</strong>：
+                                        <ul>
+                                            <li>R1：深度推理模型，适合复杂分析</li>
+                                            <li>V3：工具调用模型，适合执行搜索等功能</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div id="dev-how" class="exp-content">
+                                <h4>🛠️ 如何工作？</h4>
+                                <div class="code-block">
+<span class="comment"># 1. 初始化向量数据库</span>
+vector_store = VectorStore(
+    chroma_path=<span class="string">"./chroma_db"</span>,
+    embedding_model=<span class="string">"all-MiniLM-L6-v2"</span>
+)
+
+<span class="comment"># 2. 初始化AI生成器</span>
+ai_generator = AIGenerator(
+    api_key=config.LLM_API_KEY,
+    model=config.MODEL_REASON
+)
+
+<span class="comment"># 3. 初始化路由器</span>
+router = LLMRouter()
+<span class="keyword">if</span> <span class="string">"搜索"</span> <span class="keyword">in</span> query:
+    model = router.select_model(<span class="string">"tool_call"</span>)  <span class="comment"># 选择V3</span>
+<span class="keyword">else</span>:
+    model = router.select_model(<span class="string">"reasoning"</span>)  <span class="comment"># 选择R1</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 组件初始化可视化 -->
+                        <div class="flow-container">
+                            <div class="flow-node" id="node-vector" style="left: 0; top: 50px;">
+                                💾 向量数据库
+                            </div>
+                            <div class="flow-arrow" style="left: 180px; top: 73px;"></div>
+                            
+                            <div class="flow-node" id="node-embed" style="left: 250px; top: 50px;">
+                                🔢 嵌入模型
+                            </div>
+                            <div class="flow-arrow" style="left: 410px; top: 73px;"></div>
+                            
+                            <div class="flow-node" id="node-ai" style="left: 480px; top: 50px;">
+                                🤖 AI双模型
+                            </div>
+                        </div>
+                        
+                        <button class="btn" onclick="initComponents()">
+                            <span>🚀</span> 初始化组件
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 管理态 -->
+            <div id="manage" class="stage">
+                <div class="step-container">
+                    <div class="step-title">
+                        <div class="step-number">2</div>
+                        文档处理 - 知识库构建
+                    </div>
+
+                    <div class="info-tip">
+                        <span class="info-tip-icon">💡</span>
+                        <div class="info-tip-content">
+                            <h4>什么是管理态？</h4>
+                            <p>管理态是准备和导入课程内容的阶段。就像图书管理员要给新书编目、贴标签、分类上架一样，我们要把文档处理成系统能理解的格式。</p>
+                        </div>
+                    </div>
+
+                    <div class="demo-area">
+                        <h3>📄 课程文档格式规范</h3>
+                        <div class="code-block">
+Course Title: Python编程基础
+Course Link: https://example.com/python
+Course Instructor: 张老师
+
+Lesson 0: Python简介
+Python是一种高级编程语言，以其简洁和易读性著称。
+它被广泛应用于Web开发、数据科学、人工智能等领域。
+
+Lesson 1: 变量和数据类型
+在Python中，变量是存储数据的容器。
+基本数据类型包括：整数(int)、浮点数(float)、字符串(str)、布尔值(bool)。
+                        </div>
+                    </div>
+
+                    <div class="demo-area">
+                        <h3>✂️ 智能分块处理</h3>
+                        
+                        <div class="info-tip">
+                            <span class="info-tip-icon">🍕</span>
+                            <div class="info-tip-content">
+                                <h4>为什么要分块？</h4>
+                                <p>就像吃披萨要切成小块一样，大文档需要切分成小块才能有效处理。每块保持语义完整性，同时控制大小以提高搜索精度。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="chunk-visualization" id="chunks-display">
+                            <!-- 分块将动态生成 -->
+                        </div>
+                        
+                        <button class="btn" onclick="demonstrateChunking()">
+                            <span>✂️</span> 演示分块过程
+                        </button>
+                    </div>
+
+                    <div class="demo-area">
+                        <h3>🔢 向量化处理</h3>
+                        
+                        <div class="explanation-box">
+                            <div class="explanation-tabs">
+                                <div class="exp-tab active" onclick="showExplanation('vec-why')">为什么</div>
+                                <div class="exp-tab" onclick="showExplanation('vec-what')">是什么</div>
+                                <div class="exp-tab" onclick="showExplanation('vec-how')">怎么做</div>
+                            </div>
+                            
+                            <div id="vec-why" class="exp-content active">
+                                <h4>🤔 为什么要向量化？</h4>
+                                <p>文本对计算机来说只是符号，没有意义。向量化将文本转换为数字，这样：</p>
+                                <ul>
+                                    <li>可以计算文本之间的相似度</li>
+                                    <li>语义相近的文本，向量也相近</li>
+                                    <li>实现"理解"而非简单匹配</li>
+                                </ul>
+                            </div>
+                            
+                            <div id="vec-what" class="exp-content">
+                                <h4>📊 向量是什么？</h4>
+                                <p>向量是一组数字，代表文本在多维空间中的位置：</p>
+                                <div class="code-block">
+<span class="comment"># 文本</span>
+text1 = <span class="string">"Python编程"</span>
+text2 = <span class="string">"Python开发"</span>
+text3 = <span class="string">"Java编程"</span>
+
+<span class="comment"># 对应的向量（简化示例）</span>
+vec1 = [<span class="number">0.8</span>, <span class="number">0.6</span>, <span class="number">0.2</span>]  <span class="comment"># Python编程</span>
+vec2 = [<span class="number">0.85</span>, <span class="number">0.55</span>, <span class="number">0.25</span>]  <span class="comment"># Python开发（很相似）</span>
+vec3 = [<span class="number">0.3</span>, <span class="number">0.7</span>, <span class="number">0.9</span>]  <span class="comment"># Java编程（差异较大）</span>
+                                </div>
+                            </div>
+                            
+                            <div id="vec-how" class="exp-content">
+                                <h4>🔧 如何计算相似度？</h4>
+                                <p>使用余弦相似度公式：</p>
+                                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                                    <strong>相似度 = cos(θ) = (A·B) / (|A| × |B|)</strong>
+                                    <br><br>
+                                    值域：[-1, 1]<br>
+                                    - 1 = 完全相同<br>
+                                    - 0 = 无关<br>
+                                    - -1 = 完全相反
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="vector-display" id="vector-display">
+                            <!-- 向量动画将在这里显示 -->
+                        </div>
+                        
+                        <button class="btn" onclick="demonstrateVectorization()">
+                            <span>🔢</span> 演示向量化
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 运行态 -->
+            <div id="runtime" class="stage">
+                <div class="step-container">
+                    <div class="step-title">
+                        <div class="step-number">3</div>
+                        查询处理 - 智能问答
+                    </div>
+
+                    <div class="info-tip">
+                        <span class="info-tip-icon">💡</span>
+                        <div class="info-tip-content">
+                            <h4>什么是运行态？</h4>
+                            <p>运行态是系统提供服务的阶段。用户提出问题，系统理解问题、搜索相关内容、生成准确答案。整个过程就像一个智能助手在帮你查找和总结信息。</p>
+                        </div>
+                    </div>
+
+                    <div class="demo-area">
+                        <h3>🔍 智能查询流程</h3>
+                        
+                        <!-- 进度指示器 -->
+                        <div class="progress-indicator">
+                            <div class="progress-dot active" id="step1-dot"></div>
+                            <div class="progress-dot" id="step2-dot"></div>
+                            <div class="progress-dot" id="step3-dot"></div>
+                            <div class="progress-dot" id="step4-dot"></div>
+                            <div class="progress-dot" id="step5-dot"></div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin: 20px 0;">
+                            <input type="text" id="user-query" value="Python的基本数据类型有哪些？" 
+                                   style="flex: 1; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1.1em;">
+                            <button class="btn" onclick="processFullQuery()">
+                                <span>🔍</span> 处理查询
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 对比展示 -->
+                    <div class="demo-area">
+                        <h3>📊 RAG vs 传统搜索 对比</h3>
+                        
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>特性</th>
+                                    <th>传统关键词搜索</th>
+                                    <th>RAG语义搜索</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>搜索方式</td>
+                                    <td>精确匹配关键词</td>
+                                    <td>理解语义相似性</td>
+                                </tr>
+                                <tr>
+                                    <td>示例查询</td>
+                                    <td>搜"Python"找不到"派森"</td>
+                                    <td>理解"Python"="派森"</td>
+                                </tr>
+                                <tr>
+                                    <td>上下文理解</td>
+                                    <td>❌ 无</td>
+                                    <td>✅ 理解上下文</td>
+                                </tr>
+                                <tr>
+                                    <td>答案生成</td>
+                                    <td>返回原文</td>
+                                    <td>生成总结性答案</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 性能指标 -->
+                    <div class="demo-area">
+                        <h3>📈 性能指标</h3>
+                        
+                        <div class="metrics-panel">
+                            <div class="metric-card">
+                                <div class="metric-label">处理时间</div>
+                                <div class="metric-value" id="time-metric">0.0s</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Token消耗</div>
+                                <div class="metric-value" id="token-metric">0</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">相似度得分</div>
+                                <div class="metric-value" id="similarity-metric">0.00</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">成本估算</div>
+                                <div class="metric-value" id="cost-metric">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最终答案 -->
+                    <div class="demo-area" style="background: #d4edda;">
+                        <h3>✅ AI生成答案</h3>
+                        <div id="final-answer" style="font-size: 1.1em; line-height: 1.8; padding: 20px; background: white; border-radius: 10px; margin-top: 15px;">
+                            <!-- 答案将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 增强的控制面板 -->
+        <div class="control-panel">
+            <div>
+                <button class="btn secondary" onclick="resetDemo()">
+                    <span>🔄</span> 重置
+                </button>
+                <button class="btn secondary" onclick="toggleShortcuts()">
+                    <span>⌨️</span> 快捷键
+                </button>
+            </div>
+            
+            <div class="speed-control">
+                <label>播放速度：</label>
+                <input type="range" class="speed-slider" id="speed-slider" 
+                       min="0.5" max="2" step="0.5" value="1">
+                <span id="speed-label">1.0x</span>
+            </div>
+            
+            <div>
+                <button class="btn" onclick="autoPlay()">
+                    <span id="play-icon">▶️</span> <span id="play-text">自动播放</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详细解释弹窗 -->
+    <div class="detail-modal" id="detail-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modal-body">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 键盘快捷键提示 -->
+    <div class="keyboard-shortcuts" id="shortcuts">
+        <h4>⌨️ 键盘快捷键</h4>
+        <div class="shortcut-item">
+            <span class="shortcut-key">Space</span> 暂停/继续
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">←/→</span> 切换标签
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">R</span> 重置演示
+        </div>
+        <div class="shortcut-item">
+            <span class="shortcut-key">?</span> 显示/隐藏快捷键
+        </div>
+    </div>
+
+    <script>
+        // 全局状态管理
+        let currentTab = 'dev';
+        let isPlaying = false;
+        let playbackSpeed = 1.0;
+        let animationTimeouts = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 设置速度滑块监听
+            const speedSlider = document.getElementById('speed-slider');
+            speedSlider.addEventListener('input', (e) => {
+                playbackSpeed = parseFloat(e.target.value);
+                document.getElementById('speed-label').textContent = playbackSpeed + 'x';
+            });
+
+            // 键盘快捷键
+            document.addEventListener('keydown', handleKeyPress);
+        });
+
+        // 键盘事件处理
+        function handleKeyPress(e) {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    autoPlay();
+                    break;
+                case 'ArrowLeft':
+                    switchToPrevTab();
+                    break;
+                case 'ArrowRight':
+                    switchToNextTab();
+                    break;
+                case 'r':
+                case 'R':
+                    resetDemo();
+                    break;
+                case '?':
+                    toggleShortcuts();
+                    break;
+            }
+        }
+
+        // 切换标签页
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+            
+            const tabs = ['dev', 'manage', 'runtime'];
+            const index = tabs.indexOf(tab);
+            document.querySelectorAll('.tab')[index].classList.add('active');
+            document.getElementById(tab).classList.add('active');
+        }
+
+        function switchToPrevTab() {
+            const tabs = ['dev', 'manage', 'runtime'];
+            const currentIndex = tabs.indexOf(currentTab);
+            if (currentIndex > 0) {
+                switchTab(tabs[currentIndex - 1]);
+            }
+        }
+
+        function switchToNextTab() {
+            const tabs = ['dev', 'manage', 'runtime'];
+            const currentIndex = tabs.indexOf(currentTab);
+            if (currentIndex < tabs.length - 1) {
+                switchTab(tabs[currentIndex + 1]);
+            }
+        }
+
+        // 显示配置详情
+        function showConfigDetails() {
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <h2>🔧 深入理解环境配置</h2>
+                
+                <h3>API密钥获取</h3>
+                <ol>
+                    <li>访问 DeepSeek 官网注册账号</li>
+                    <li>在控制台创建 API Key</li>
+                    <li>复制密钥到 .env 文件</li>
+                </ol>
+                
+                <h3>双模型架构优势</h3>
+                <ul>
+                    <li><strong>性能优化</strong>：不同任务用最适合的模型</li>
+                    <li><strong>成本控制</strong>：按需选择，避免浪费</li>
+                    <li><strong>准确度提升</strong>：专门模型专门任务</li>
+                </ul>
+                
+                <h3>参数调优建议</h3>
+                <div class="code-block">
+<span class="comment"># 中文内容优化</span>
+CHUNK_SIZE=<span class="number">300</span>      <span class="comment"># 中文信息密度高，可以小一些</span>
+CHUNK_OVERLAP=<span class="number">50</span>    <span class="comment"># 中文句子边界清晰</span>
+
+<span class="comment"># 英文内容优化</span>
+CHUNK_SIZE=<span class="number">500</span>      <span class="comment"># 英文需要更多上下文</span>
+CHUNK_OVERLAP=<span class="number">100</span>   <span class="comment"># 保持句子完整性</span>
+                </div>
+            `;
+            
+            document.getElementById('detail-modal').classList.add('show');
+        }
+
+        // 显示解释内容
+        function showExplanation(id) {
+            const prefix = id.split('-')[0];
+            document.querySelectorAll(`#${prefix}-why, #${prefix}-what, #${prefix}-how`).forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+            
+            // 更新标签状态
+            const tabs = event.target.parentElement.children;
+            for (let tab of tabs) {
+                tab.classList.remove('active');
+            }
+            event.target.classList.add('active');
+        }
+
+        // 初始化组件动画
+        function initComponents() {
+            const nodes = ['node-vector', 'node-embed', 'node-ai'];
+            let index = 0;
+            
+            function activateNext() {
+                if (index < nodes.length) {
+                    document.getElementById(nodes[index]).classList.add('active');
+                    index++;
+                    setTimeout(activateNext, 800 / playbackSpeed);
+                }
+            }
+            
+            activateNext();
+        }
+
+        // 演示分块过程
+        function demonstrateChunking() {
+            const container = document.getElementById('chunks-display');
+            container.innerHTML = '';
+            
+            const chunks = [
+                "Course Title: Python编程基础\nCourse Link: https://example.com/python\nCourse Instructor: 张老师",
+                "Lesson 0: Python简介\nPython是一种高级编程语言，以其简洁和易读性著称。",
+                "它被广泛应用于Web开发、数据科学、人工智能等领域。",
+                "Lesson 1: 变量和数据类型\n在Python中，变量是存储数据的容器。",
+                "基本数据类型包括：整数(int)、浮点数(float)、字符串(str)、布尔值(bool)。"
+            ];
+            
+            chunks.forEach((chunk, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'chunk-item';
+                    div.innerHTML = `
+                        <div class="chunk-number">块 ${index + 1}</div>
+                        <div style="font-size: 0.9em; color: #666;">
+                            ${chunk.substring(0, 50)}${chunk.length > 50 ? '...' : ''}
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.8em; color: #999;">
+                            长度: ${chunk.length} 字符
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        document.querySelectorAll('.chunk-item').forEach(c => c.classList.remove('active'));
+                        div.classList.add('active');
+                    };
+                    container.appendChild(div);
+                }, index * 300 / playbackSpeed);
+            });
+        }
+
+        // 演示向量化过程
+        function demonstrateVectorization() {
+            const display = document.getElementById('vector-display');
+            display.innerHTML = '<div style="color: #00ff00;">正在生成向量...</div>';
+            
+            setTimeout(() => {
+                const vectors = [
+                    { text: "Python编程基础", vec: [0.234, -0.456, 0.789, 0.123, -0.567] },
+                    { text: "高级编程语言", vec: [0.345, -0.234, 0.678, 0.234, -0.456] },
+                    { text: "变量和数据类型", vec: [0.456, -0.123, 0.567, 0.345, -0.234] }
+                ];
+                
+                display.innerHTML = '';
+                vectors.forEach((item, index) => {
+                    setTimeout(() => {
+                        const row = document.createElement('div');
+                        row.className = 'vector-row';
+                        row.style.animationDelay = `${index * 0.2}s`;
+                        row.innerHTML = `
+                            <strong style="color: #4fc3f7;">"${item.text}"</strong><br>
+                            <span style="color: #00ff00;">→ [${item.vec.map(v => v.toFixed(3)).join(', ')}...]</span>
+                        `;
+                        display.appendChild(row);
+                    }, index * 500 / playbackSpeed);
+                });
+            }, 1000 / playbackSpeed);
+        }
+
+        // 处理完整查询流程
+        function processFullQuery() {
+            const query = document.getElementById('user-query').value;
+            const steps = ['step1-dot', 'step2-dot', 'step3-dot', 'step4-dot', 'step5-dot'];
+            
+            // 重置所有步骤
+            steps.forEach(step => {
+                document.getElementById(step).classList.remove('active', 'completed');
+            });
+            
+            // 逐步执行
+            let currentStep = 0;
+            
+            function executeStep() {
+                if (currentStep < steps.length) {
+                    const dot = document.getElementById(steps[currentStep]);
+                    dot.classList.add('active');
+                    
+                    // 更新性能指标
+                    updateMetrics(currentStep);
+                    
+                    setTimeout(() => {
+                        dot.classList.remove('active');
+                        dot.classList.add('completed');
+                        currentStep++;
+                        executeStep();
+                    }, 1000 / playbackSpeed);
+                } else {
+                    // 显示最终答案
+                    showFinalAnswer();
+                }
+            }
+            
+            executeStep();
+        }
+
+        // 更新性能指标
+        function updateMetrics(step) {
+            const metrics = {
+                time: document.getElementById('time-metric'),
+                token: document.getElementById('token-metric'),
+                similarity: document.getElementById('similarity-metric'),
+                cost: document.getElementById('cost-metric')
+            };
+            
+            // 模拟逐步更新
+            const values = [
+                { time: 0.3, token: 50, similarity: 0.0, cost: 0.001 },
+                { time: 0.8, token: 100, similarity: 0.92, cost: 0.002 },
+                { time: 1.2, token: 150, similarity: 0.92, cost: 0.003 },
+                { time: 1.8, token: 200, similarity: 0.92, cost: 0.004 },
+                { time: 2.3, token: 250, similarity: 0.92, cost: 0.005 }
+            ];
+            
+            if (step < values.length) {
+                const v = values[step];
+                metrics.time.textContent = v.time + 's';
+                metrics.token.textContent = v.token;
+                metrics.similarity.textContent = v.similarity.toFixed(2);
+                metrics.cost.textContent = '$' + v.cost.toFixed(3);
+            }
+        }
+
+        // 显示最终答案
+        function showFinalAnswer() {
+            const answer = `根据课程内容，Python的基本数据类型包括：
+
+<strong>1. 整数 (int)</strong>
+   - 表示整数值，如：42, -10, 0
+   - 支持任意精度
+
+<strong>2. 浮点数 (float)</strong>
+   - 表示小数，如：3.14, -0.5, 2.0
+   - 使用双精度存储
+
+<strong>3. 字符串 (str)</strong>
+   - 表示文本，如："Hello", 'Python'
+   - 支持Unicode字符
+
+<strong>4. 布尔值 (bool)</strong>
+   - 表示真假，只有 True 和 False
+   - 常用于条件判断
+
+<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e9ecef;">
+    <small style="color: #666;">
+        📚 来源：Python编程基础 - Lesson 1<br>
+        🤖 模型：DeepSeek-V3 (工具调用) + DeepSeek-R1 (生成)<br>
+        ⏱️ 总耗时：2.3秒 | 💰 成本：$0.005
+    </small>
+</div>`;
+            
+            document.getElementById('final-answer').innerHTML = answer;
+        }
+
+        // 自动播放
+        function autoPlay() {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('play-icon');
+            const playText = document.getElementById('play-text');
+            
+            if (isPlaying) {
+                playIcon.textContent = '⏸️';
+                playText.textContent = '暂停';
+                startAutoPlay();
+            } else {
+                playIcon.textContent = '▶️';
+                playText.textContent = '自动播放';
+                stopAutoPlay();
+            }
+        }
+
+        function startAutoPlay() {
+            // 清除之前的定时器
+            animationTimeouts.forEach(timeout => clearTimeout(timeout));
+            animationTimeouts = [];
+            
+            // 自动执行演示
+            const demos = [
+                { tab: 'dev', func: initComponents, delay: 3000 },
+                { tab: 'manage', func: demonstrateChunking, delay: 3000 },
+                { tab: 'manage', func: demonstrateVectorization, delay: 3000 },
+                { tab: 'runtime', func: processFullQuery, delay: 2000 }
+            ];
+            
+            let currentDemo = 0;
+            
+            function playNext() {
+                if (!isPlaying || currentDemo >= demos.length) {
+                    isPlaying = false;
+                    document.getElementById('play-icon').textContent = '▶️';
+                    document.getElementById('play-text').textContent = '自动播放';
+                    return;
+                }
+                
+                const demo = demos[currentDemo];
+                switchTab(demo.tab);
+                
+                const timeout = setTimeout(() => {
+                    demo.func();
+                    currentDemo++;
+                    
+                    const nextTimeout = setTimeout(playNext, demo.delay / playbackSpeed);
+                    animationTimeouts.push(nextTimeout);
+                }, 500 / playbackSpeed);
+                
+                animationTimeouts.push(timeout);
+            }
+            
+            playNext();
+        }
+
+        function stopAutoPlay() {
+            animationTimeouts.forEach(timeout => clearTimeout(timeout));
+            animationTimeouts = [];
+        }
+
+        // 重置演示
+        function resetDemo() {
+            stopAutoPlay();
+            location.reload();
+        }
+
+        // 显示/隐藏快捷键
+        function toggleShortcuts() {
+            const shortcuts = document.getElementById('shortcuts');
+            shortcuts.classList.toggle('show');
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('detail-modal').classList.remove('show');
+        }
+
+        // 点击弹窗外部关闭
+        document.getElementById('detail-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'detail-modal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
