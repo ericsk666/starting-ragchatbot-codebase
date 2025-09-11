@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Course Materials Assistant</title>
+    <title>AI学习助手</title>
     <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Course Materials Assistant</h1>
-            <p class="subtitle">Ask questions about courses, instructors, and content</p>
+            <h1>AI学习助手</h1>
+            <p class="subtitle">询问课程内容、讲师信息或具体知识点</p>
         </header>
 
         <div class="main-content">
@@ -22,33 +22,22 @@
                 <!-- Course Stats -->
                 <div class="sidebar-section">
                     <details class="stats-collapsible">
-                        <summary class="stats-header">Courses</summary>
+                        <summary class="stats-header">课程资源</summary>
                         <div class="course-stats" id="courseStats">
                             <div class="stat-item">
-                                <span class="stat-label">Number of courses:</span>
+                                <span class="stat-label">课程数量：</span>
                                 <span class="stat-value" id="totalCourses">-</span>
                             </div>
                             <div class="stat-item">
                                 <div class="course-titles" id="courseTitles">
-                                    <span class="loading">Loading...</span>
+                                    <span class="loading">加载中...</span>
                                 </div>
                             </div>
                         </div>
                     </details>
                 </div>
 
-                <!-- Suggested Questions -->
-                <div class="sidebar-section">
-                    <details class="suggested-collapsible">
-                        <summary class="suggested-header">Try asking:</summary>
-                        <div class="suggested-items">
-                            <button class="suggested-item" data-question="What is the outline of the &quot;MCP: Build Rich-Context AI Apps with Anthropic&quot; course?">Outline of a course</button>
-                            <button class="suggested-item" data-question="Are there any courses that include a Chatbot implementation?">Courses about Chatbot</button>
-                            <button class="suggested-item" data-question="Are there any courses that explain what RAG is?">Courses explaining RAG</button>
-                            <button class="suggested-item" data-question="What was covered in lesson 5 of the MCP course?">Details of a course's lesson</button>
-                        </div>
-                    </details>
-                </div>
+                <!-- 侧边栏保留为空，推荐问题移到输入框下方 -->
             </aside>
 
             <!-- Main Chat Area -->
@@ -59,7 +48,7 @@
                         <input 
                             type="text" 
                             id="chatInput" 
-                            placeholder="Ask about courses, lessons, or specific content..."
+                            placeholder="输入你的问题..."
                             autocomplete="off"
                         >
                         <button id="sendButton">
@@ -68,6 +57,13 @@
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                             </svg>
                         </button>
+                    </div>
+                    <!-- 推荐问题气泡 -->
+                    <div class="suggested-bubbles" id="suggestedBubbles">
+                        <button class="bubble-item" data-question="查看MCP课程的大纲是什么？">查看课程大纲</button>
+                        <button class="bubble-item" data-question="有哪些关于聊天机器人的课程？">关于聊天机器人的课程</button>
+                        <button class="bubble-item" data-question="哪些课程讲解了RAG技术？">讲解RAG技术的课程</button>
+                        <button class="bubble-item" data-question="MCP课程第5课讲了什么内容？">查看课程具体章节详情</button>
                     </div>
                 </div>
             </main>

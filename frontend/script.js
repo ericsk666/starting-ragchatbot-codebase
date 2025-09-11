@@ -29,9 +29,8 @@ function setupEventListeners() {
         if (e.key === 'Enter') sendMessage();
     });
     
-    
-    // Suggested questions
-    document.querySelectorAll('.suggested-item').forEach(button => {
+    // 推荐问题气泡点击
+    document.querySelectorAll('.bubble-item').forEach(button => {
         button.addEventListener('click', (e) => {
             const question = e.target.getAttribute('data-question');
             chatInput.value = question;
@@ -71,7 +70,7 @@ async function sendMessage() {
             })
         });
 
-        if (!response.ok) throw new Error('Query failed');
+        if (!response.ok) throw new Error('查询失败');
 
         const data = await response.json();
         
@@ -87,7 +86,7 @@ async function sendMessage() {
     } catch (error) {
         // Replace loading message with error
         loadingMessage.remove();
-        addMessage(`Error: ${error.message}`, 'assistant');
+        addMessage(`错误：${error.message}`, 'assistant');
     } finally {
         chatInput.disabled = false;
         sendButton.disabled = false;
@@ -105,6 +104,7 @@ function createLoadingMessage() {
                 <span></span>
                 <span></span>
             </div>
+            <span class="loading-text">思考中...</span>
         </div>
     `;
     return messageDiv;
@@ -124,7 +124,7 @@ function addMessage(content, type, sources = null, isWelcome = false, sourcesDet
     if (sources && sources.length > 0) {
         html += `
             <details class="sources-collapsible">
-                <summary class="sources-header">Sources</summary>
+                <summary class="sources-header">参考来源</summary>
                 <div class="sources-content">`;
         
         // If we have detailed sources with links, use them
@@ -175,18 +175,18 @@ function escapeHtml(text) {
 async function createNewSession() {
     currentSessionId = null;
     chatMessages.innerHTML = '';
-    addMessage('Welcome to the Course Materials Assistant! I can help you with questions about courses, lessons and specific content. What would you like to know?', 'assistant', null, true);
+    addMessage('欢迎使用AI学习助手！我可以帮您解答关于课程、教学内容和具体知识点的问题。您想了解什么？', 'assistant', null, true);
 }
 
 // Load course statistics
 async function loadCourseStats() {
     try {
-        console.log('Loading course stats...');
+        console.log('加载课程统计...');
         const response = await fetch(`${API_URL}/courses`);
-        if (!response.ok) throw new Error('Failed to load course stats');
+        if (!response.ok) throw new Error('加载课程统计失败');
         
         const data = await response.json();
-        console.log('Course data received:', data);
+        console.log('收到课程数据：', data);
         
         // Update stats in UI
         if (totalCourses) {
@@ -200,18 +200,18 @@ async function loadCourseStats() {
                     .map(title => `<div class="course-title-item">${title}</div>`)
                     .join('');
             } else {
-                courseTitles.innerHTML = '<span class="no-courses">No courses available</span>';
+                courseTitles.innerHTML = '<span class="no-courses">暂无课程</span>';
             }
         }
         
     } catch (error) {
-        console.error('Error loading course stats:', error);
+        console.error('加载课程统计错误：', error);
         // Set default values on error
         if (totalCourses) {
             totalCourses.textContent = '0';
         }
         if (courseTitles) {
-            courseTitles.innerHTML = '<span class="error">Failed to load courses</span>';
+            courseTitles.innerHTML = '<span class="error">加载课程失败</span>';
         }
     }
 }

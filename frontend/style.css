@@ -5,23 +5,45 @@
     padding: 0;
 }
 
-/* CSS Variables */
+/* CSS Variables - 明亮主题 */
 :root {
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
-    --background: #0f172a;
-    --surface: #1e293b;
-    --surface-hover: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border-color: #334155;
-    --user-message: #2563eb;
-    --assistant-message: #374151;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    --radius: 12px;
-    --focus-ring: rgba(37, 99, 235, 0.2);
-    --welcome-bg: #1e3a5f;
-    --welcome-border: #2563eb;
+    /* 主色调 */
+    --primary-color: #8b5cf6;
+    --primary-hover: #7c3aed;
+    --primary-light: #ede9fe;
+    
+    /* 背景色 */
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-hover: #f3f4f6;
+    
+    /* 文字色 */
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    
+    /* 边框 */
+    --border-color: #e5e7eb;
+    --divider: #f3f4f6;
+    
+    /* 消息气泡 */
+    --user-message: #8b5cf6;
+    --assistant-message: #f3f4f6;
+    
+    /* 阴影 */
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* 圆角 */
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-full: 24px;
+    
+    /* 其他 */
+    --focus-ring: rgba(139, 92, 246, 0.2);
+    --welcome-bg: #f9f5ff;
+    --welcome-border: #8b5cf6;
 }
 
 /* Base Styles */
@@ -46,15 +68,19 @@ body {
     padding: 0;
 }
 
-/* Header - Hidden */
+/* Header - 显示并美化 */
 header {
-    display: none;
+    display: block;
+    padding: 1.5rem 2rem;
+    background: var(--background);
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
 }
 
 header h1 {
     font-size: 1.75rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -77,7 +103,7 @@ header h1 {
 
 /* Left Sidebar */
 .sidebar {
-    width: 320px;
+    width: 280px;
     background: var(--surface);
     border-right: 1px solid var(--border-color);
     padding: 1.5rem;
@@ -201,8 +227,9 @@ header h1 {
 }
 
 .message.assistant .message-content {
-    background: var(--surface);
+    background: var(--assistant-message);
     color: var(--text-primary);
+    border: 1px solid var(--border-color);
     border-bottom-left-radius: 4px;
 }
 
@@ -287,6 +314,51 @@ header h1 {
 /* Plain source (no link) */
 .source-plain {
     color: var(--text-secondary);
+}
+
+/* 推荐问题气泡区域 */
+.suggested-bubbles {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    background: var(--surface);
+    border-top: 1px solid var(--border-color);
+}
+
+/* 气泡样式 */
+.bubble-item {
+    padding: 10px 20px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.bubble-item:hover {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.bubble-item:active {
+    transform: translateY(0);
+}
+
+/* 加载文字 */
+.loading-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-left: 10px;
 }
 
 /* Markdown formatting styles */
