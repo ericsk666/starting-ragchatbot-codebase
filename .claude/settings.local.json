@@ -13,7 +13,8 @@
       "Bash(dir:*)",
       "Bash(mv:*)",
       "Read(//d/study/starting_codebase/**)",
-      "Bash(start rag_system_demo_v4.html)"
+      "Bash(start rag_system_demo_v4.html)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

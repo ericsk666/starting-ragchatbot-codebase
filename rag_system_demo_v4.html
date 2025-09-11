@@ -212,6 +212,13 @@
             stroke-width: 3;
             filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
         }
+        
+        /* SVG特定的高亮样式 - 使用stroke替代border */
+        svg .flow-node.highlighted {
+            stroke: #fbbf24;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.6));
+        }
 
         .flow-node.completed {
             fill: #d4edda;
@@ -1066,13 +1073,13 @@ chunks = chunk_text(text)
             <!-- 右侧信息面板 -->
             <div class="info-panel">
                 <div class="info-tabs">
-                    <button class="info-tab active" onclick="switchInfoTab('concept')">
+                    <button class="info-tab active" onclick="switchInfoTab('concept', event)">
                         📚 概念原理
                     </button>
-                    <button class="info-tab" onclick="switchInfoTab('code')">
+                    <button class="info-tab" onclick="switchInfoTab('code', event)">
                         💻 代码实现
                     </button>
-                    <button class="info-tab" onclick="switchInfoTab('runtime')">
+                    <button class="info-tab" onclick="switchInfoTab('runtime', event)">
                         🚀 运行状态
                     </button>
                 </div>
@@ -1684,7 +1691,7 @@ sim_matrix = cosine_similarity(vectors)
         }
 
         // 切换信息面板标签
-        function switchInfoTab(tab) {
+        function switchInfoTab(tab, event) {
             // 阻止事件冒泡
             if (event) {
                 event.stopPropagation();
@@ -1696,7 +1703,7 @@ sim_matrix = cosine_similarity(vectors)
             });
             
             // 找到被点击的标签按钮并激活
-            const clickedTab = document.querySelector(`[onclick="switchInfoTab('${tab}')"]`);
+            const clickedTab = document.querySelector(`[onclick="switchInfoTab('${tab}', event)"]`);
             if (clickedTab) {
                 clickedTab.classList.add('active');
             }
@@ -2717,8 +2724,10 @@ sim_matrix = cosine_similarity(vectors)
                     // 更新进度
                     updateProgress((index + 1) / steps.length * 100);
                     
-                    // 添加日志
-                    addLog(`处理：${step.node.replace('-node', '')}`);
+                    // 添加日志 - 使用步骤中定义的log字段
+                    if (step.log) {
+                        addLog(step.log);
+                    }
                 }
                 
                 // 标记为完成并继续
@@ -2770,10 +2779,16 @@ sim_matrix = cosine_similarity(vectors)
 
         // 更新指标
         function updateMetrics() {
-            document.getElementById('time-metric').textContent = '0.0s';
-            document.getElementById('docs-metric').textContent = '0';
-            document.getElementById('vectors-metric').textContent = '384';
-            document.getElementById('similarity-metric').textContent = '0%';
+            // 使用安全的元素查找，避免找不到元素时报错
+            const timeEl = document.getElementById('time-metric');
+            const docsEl = document.getElementById('docs-metric');
+            const vectorsEl = document.getElementById('vectors-metric');
+            const similarityEl = document.getElementById('similarity-metric');
+            
+            if (timeEl) timeEl.textContent = '0.0s';
+            if (docsEl) docsEl.textContent = '0';
+            if (vectorsEl) vectorsEl.textContent = '384';
+            if (similarityEl) similarityEl.textContent = '0%';
         }
 
         // 添加日志
