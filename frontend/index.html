@@ -21,20 +21,17 @@
             <aside class="sidebar">
                 <!-- Course Stats -->
                 <div class="sidebar-section">
-                    <details class="stats-collapsible">
-                        <summary class="stats-header">课程资源</summary>
-                        <div class="course-stats" id="courseStats">
-                            <div class="stat-item">
-                                <span class="stat-label">课程数量：</span>
-                                <span class="stat-value" id="totalCourses">-</span>
-                            </div>
-                            <div class="stat-item">
-                                <div class="course-titles" id="courseTitles">
-                                    <span class="loading">加载中...</span>
-                                </div>
-                            </div>
+                    <div class="resources-header">
+                        <span class="resources-title">课程资源</span>
+                        <span class="resources-count" id="totalCourses">0</span>
+                    </div>
+                    <div class="resources-list" id="resourcesList">
+                        <!-- 课程文件列表 -->
+                        <div class="loading-resources">
+                            <span class="loading-icon">⏳</span>
+                            <span>加载中...</span>
                         </div>
-                    </details>
+                    </div>
                 </div>
 
                 <!-- 侧边栏保留为空，推荐问题移到输入框下方 -->
@@ -60,10 +57,10 @@
                     </div>
                     <!-- 推荐问题气泡 -->
                     <div class="suggested-bubbles" id="suggestedBubbles">
-                        <button class="bubble-item" data-question="查看MCP课程的大纲是什么？">查看课程大纲</button>
-                        <button class="bubble-item" data-question="有哪些关于聊天机器人的课程？">关于聊天机器人的课程</button>
-                        <button class="bubble-item" data-question="哪些课程讲解了RAG技术？">讲解RAG技术的课程</button>
-                        <button class="bubble-item" data-question="MCP课程第5课讲了什么内容？">查看课程具体章节详情</button>
+                        <button class="bubble-item" data-question="What are the core principles and evolution path of large language models?">Core principles of LLMs</button>
+                        <button class="bubble-item" data-question="How to effectively build, evaluate and optimize generative AI applications?">Building generative AI apps</button>
+                        <button class="bubble-item" data-question="What is RAG technology and how to implement it?">Understanding RAG technology</button>
+                        <button class="bubble-item" data-question="What are the best practices for prompt engineering?">Prompt engineering best practices</button>
                     </div>
                 </div>
             </main>

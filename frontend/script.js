@@ -189,29 +189,38 @@ async function loadCourseStats() {
         console.log('收到课程数据：', data);
         
         // Update stats in UI
-        if (totalCourses) {
-            totalCourses.textContent = data.total_courses;
+        const totalCoursesElem = document.getElementById('totalCourses');
+        if (totalCoursesElem) {
+            totalCoursesElem.textContent = data.total_courses || '0';
         }
         
-        // Update course titles
-        if (courseTitles) {
+        // Update resources list with file-like display
+        const resourcesList = document.getElementById('resourcesList');
+        if (resourcesList) {
             if (data.course_titles && data.course_titles.length > 0) {
-                courseTitles.innerHTML = data.course_titles
-                    .map(title => `<div class="course-title-item">${title}</div>`)
+                resourcesList.innerHTML = data.course_titles
+                    .map(title => `
+                        <div class="resource-item">
+                            <span class="resource-icon">📄</span>
+                            <span class="resource-name">${title}</span>
+                        </div>
+                    `)
                     .join('');
             } else {
-                courseTitles.innerHTML = '<span class="no-courses">暂无课程</span>';
+                resourcesList.innerHTML = '<div class="no-resources">暂无课程资源</div>';
             }
         }
         
     } catch (error) {
         console.error('加载课程统计错误：', error);
         // Set default values on error
-        if (totalCourses) {
-            totalCourses.textContent = '0';
+        const totalCoursesElem = document.getElementById('totalCourses');
+        if (totalCoursesElem) {
+            totalCoursesElem.textContent = '0';
         }
-        if (courseTitles) {
-            courseTitles.innerHTML = '<span class="error">加载课程失败</span>';
+        const resourcesList = document.getElementById('resourcesList');
+        if (resourcesList) {
+            resourcesList.innerHTML = '<div class="error-message">加载失败</div>';
         }
     }
 }

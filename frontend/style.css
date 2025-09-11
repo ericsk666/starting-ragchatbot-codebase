@@ -137,6 +137,97 @@ header h1 {
     margin-bottom: 0;
 }
 
+/* Resources List - NotebookLM Style */
+.resources-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.resources-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.resources-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.resources-list {
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--surface);
+    transition: background 0.2s ease;
+    cursor: pointer;
+}
+
+.resource-item:hover {
+    background: var(--surface);
+}
+
+.resource-item:last-child {
+    border-bottom: none;
+}
+
+.resource-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.resource-name {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.loading-resources {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    gap: 0.5rem;
+}
+
+.loading-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.no-resources {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
 /* Main Chat Area */
 .chat-main {
     flex: 1;
@@ -214,23 +305,27 @@ header h1 {
 }
 
 .message-content {
-    padding: 0.75rem 1.25rem;
-    border-radius: 18px;
+    padding: 1rem 1.25rem;
+    border-radius: 20px;
     word-wrap: break-word;
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .message.user .message-content {
-    background: var(--user-message);
+    background: var(--primary-color);
     color: white;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
 }
 
 .message.assistant .message-content {
-    background: var(--assistant-message);
+    background: white;
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* Message metadata */
@@ -422,9 +517,9 @@ header h1 {
 
 /* Welcome message special styling */
 .message.welcome-message .message-content {
-    background: var(--surface);
-    border: 2px solid var(--border-color);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, var(--surface) 0%, white 100%);
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
     position: relative;
 }
 
@@ -442,51 +537,56 @@ header h1 {
     margin: 1rem 0;
 }
 
-/* Chat Input Container */
+/* Chat Input Container - NotebookLM Style */
 .chat-input-container {
     display: flex;
     gap: 0.75rem;
-    padding: 1.5rem 2rem;
-    background: var(--background);
+    padding: 1rem 2rem;
+    background: var(--surface);
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
+    align-items: center;
 }
 
-/* Chat Input */
+/* Chat Input - NotebookLM Style */
 #chatInput {
     flex: 1;
     padding: 0.875rem 1.25rem;
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
+    background: var(--background);
+    border: 2px solid transparent;
+    border-radius: 28px;
     color: var(--text-primary);
     font-size: 0.95rem;
     transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 #chatInput:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px var(--focus-ring);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 3px var(--focus-ring);
+    background: white;
 }
 
 #chatInput::placeholder {
     color: var(--text-secondary);
 }
 
-/* Send Button */
+/* Send Button - NotebookLM Style */
 #sendButton {
-    padding: 0.75rem 1.25rem;
+    padding: 0;
+    width: 44px;
+    height: 44px;
     background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 24px;
+    border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    min-width: 52px;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
 #sendButton:focus {
@@ -496,12 +596,12 @@ header h1 {
 
 #sendButton:hover:not(:disabled) {
     background: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
 
 #sendButton:active:not(:disabled) {
-    transform: translateY(0);
+    transform: scale(0.95);
 }
 
 #sendButton:disabled {
