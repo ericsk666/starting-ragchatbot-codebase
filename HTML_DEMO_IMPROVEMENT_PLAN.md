@@ -392,6 +392,308 @@ function highlightCode(code) {
 
 ---
 
-**文档版本**: 1.0  
-**创建时间**: 2025-01-10  
+## Part 4: V4版本深度改进计划（2025-01-11）
+
+### 📊 版本演进历程
+
+| 版本 | 时间 | 核心改进 | 主要问题 |
+|-----|------|---------|----------|
+| V1 | 2025-01-10 | 基础三态演示框架 | 缺乏深度解释 |
+| V2 | 2025-01-10 | 增加教学内容和代码展示 | 内容与交互割裂 |
+| V3 | 2025-01-10 | 数据流动可视化 | 深度不足，缺少组件原理解释 |
+| V4 | 2025-01-11 | 深度教学与交互融合 | - |
+
+### 🎯 V4版本核心目标
+
+解决V3版本的关键问题：
+1. **深度不足**：没有解释为什么用向量数据库而不是传统数据库
+2. **原理缺失**：MiniLM-L6模型的工作机制未详细说明
+3. **交互受限**：节点不支持点击深入了解
+4. **代码脱节**：开发代码与运行状态未关联展示
+
+### 🏗️ V4架构设计
+
+#### 1. 三层信息架构
+
+```
+用户界面层
+    ↓
+┌─────────────────────────────────────┐
+│         可视化演示层                  │
+│  • 数据流动画                        │
+│  • 节点状态展示                      │
+│  • 进度追踪                          │
+└─────────────────────────────────────┘
+    ↓ 点击交互
+┌─────────────────────────────────────┐
+│         深度学习层                    │
+│  ┌──────────┬──────────┬──────────┐ │
+│  │ 概念层   │ 代码层   │ 运行层   │ │
+│  │ Why-What │ Python   │ 实时数据 │ │
+│  │ -How     │ 实现     │ 监控     │ │
+│  └──────────┴──────────┴──────────┘ │
+└─────────────────────────────────────┘
+```
+
+#### 2. 核心组件深度解释框架
+
+##### 向量数据库深度剖析
+
+**类比解释**：
+- 传统数据库 = 图书馆的书名索引（只能精确查找）
+- 向量数据库 = 图书管理员的知识（理解内容关联）
+
+**技术原理**：
+```python
+# 传统数据库查询
+SELECT * FROM documents 
+WHERE content LIKE '%Python%'  # 找不到"派森"、"蟒蛇语言"
+
+# 向量数据库查询
+query_vector = embed("Python编程")
+similar_docs = vector_db.search(
+    query_vector,
+    metric="cosine",  # 余弦相似度
+    top_k=5
+)
+# 能找到所有语义相关的内容
+```
+
+**可视化展示**：
+- 2D向量空间投影
+- 查询点与文档点的距离
+- 余弦相似度计算过程
+
+##### MiniLM-L6模型深度解释
+
+**为什么选择MiniLM-L6**：
+| 特性 | MiniLM-L6 | BERT-base | GPT嵌入 |
+|-----|-----------|-----------|----------|
+| 模型大小 | 25MB | 420MB | API调用 |
+| 推理速度 | 快 | 中等 | 依赖网络 |
+| 多语言 | ✅ | 部分 | ✅ |
+| 离线使用 | ✅ | ✅ | ❌ |
+| 向量维度 | 384 | 768 | 1536 |
+
+**文本→向量转换过程**：
+```
+"Python基础" 
+    ↓ Tokenization（分词）
+["Python", "基础"]
+    ↓ Encoding（编码）
+[101, 2348, 1523, 102]  # Token IDs
+    ↓ Embedding（嵌入）
+[0.23, -0.45, 0.67, ...]  # 384维向量
+```
+
+##### 双模型架构决策树
+
+```mermaid
+graph TD
+    A[用户查询] --> B{分析查询类型}
+    B -->|包含课程内容| C[需要搜索]
+    B -->|通用知识| D[直接推理]
+    C --> E[DeepSeek-V3<br/>工具调用]
+    D --> F[DeepSeek-R1<br/>推理回答]
+    E --> G[向量搜索]
+    G --> H[获得结果]
+    H --> I[切换到R1]
+    I --> J[整合答案]
+    F --> K[生成回答]
+    J --> K
+```
+
+### 💡 V4创新功能
+
+#### 1. 节点交互系统
+
+**点击节点后的展示内容**：
+
+```javascript
+// 节点数据结构
+const nodeDetails = {
+    'vector-db': {
+        concept: {
+            why: "传统数据库无法理解语义相似性",
+            what: "专门存储和检索向量的数据库",
+            how: "通过余弦相似度计算找到相近内容"
+        },
+        code: {
+            file: "backend/vector_store.py",
+            snippet: `
+class VectorStore:
+    def __init__(self, chroma_path: str):
+        self.client = chromadb.PersistentClient(
+            path=chroma_path
+        )
+    
+    def search(self, query: str, k: int = 5):
+        # 将查询转换为向量
+        query_vector = self.embed(query)
+        # 搜索相似向量
+        results = self.collection.query(
+            query_embeddings=[query_vector],
+            n_results=k
+        )
+        return results
+            `
+        },
+        runtime: {
+            status: "运行中",
+            metrics: {
+                "存储文档数": 1250,
+                "向量维度": 384,
+                "平均查询时间": "45ms"
+            }
+        }
+    }
+};
+```
+
+#### 2. 对比学习面板
+
+**传统搜索 vs RAG系统对比**：
+
+| 查询 | 传统搜索结果 | RAG系统结果 |
+|-----|------------|------------|
+| "Python" | ✅ 找到"Python" | ✅ 找到"Python"、"派森"、"蟒蛇语言" |
+| "如何定义函数" | ❌ 必须包含"定义函数" | ✅ 理解"创建函数"、"函数声明"等 |
+| "for循环" | ✅ 精确匹配 | ✅ 找到"循环"、"迭代"、"遍历"相关内容 |
+
+#### 3. 性能指标实时展示
+
+```javascript
+const performanceMetrics = {
+    "文档处理": {
+        "分块数量": 0,
+        "向量化时间": "0ms",
+        "存储时间": "0ms"
+    },
+    "查询处理": {
+        "查询向量化": "0ms",
+        "相似度搜索": "0ms",
+        "AI生成": "0ms",
+        "总耗时": "0ms"
+    },
+    "系统资源": {
+        "内存使用": "0MB",
+        "CPU占用": "0%",
+        "存储空间": "0MB"
+    }
+};
+```
+
+### 📐 技术实现细节
+
+#### 1. 向量空间可视化（2D投影）
+
+```javascript
+// 使用t-SNE或PCA降维到2D
+function visualizeVectorSpace(vectors) {
+    // 简化的2D投影
+    const canvas = document.getElementById('vector-space');
+    const ctx = canvas.getContext('2d');
+    
+    // 绘制文档向量点
+    vectors.forEach(vec => {
+        ctx.beginPath();
+        ctx.arc(vec.x, vec.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#667eea';
+        ctx.fill();
+    });
+    
+    // 绘制查询向量
+    ctx.beginPath();
+    ctx.arc(query.x, query.y, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fill();
+    
+    // 绘制相似度连线
+    drawSimilarityLines(ctx, query, vectors);
+}
+```
+
+#### 2. 余弦相似度计算展示
+
+```javascript
+function showCosineSimilarity(vecA, vecB) {
+    // 计算点积
+    const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+    
+    // 计算模长
+    const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+    const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+    
+    // 余弦相似度
+    const similarity = dotProduct / (normA * normB);
+    
+    // 可视化展示
+    return {
+        formula: `cos(θ) = (A·B) / (|A| × |B|)`,
+        dotProduct: dotProduct.toFixed(4),
+        normA: normA.toFixed(4),
+        normB: normB.toFixed(4),
+        similarity: similarity.toFixed(4),
+        angle: Math.acos(similarity) * 180 / Math.PI  // 转换为角度
+    };
+}
+```
+
+### 🔄 V4实施步骤
+
+1. **第一阶段：基础框架**
+   - [x] 创建V4文件结构
+   - [ ] 整合V1-V3优点
+   - [ ] 实现三层信息架构
+
+2. **第二阶段：深度内容**
+   - [ ] 向量数据库原理模块
+   - [ ] MiniLM-L6详解模块
+   - [ ] 双模型架构解释
+   - [ ] 代码示例集成
+
+3. **第三阶段：交互功能**
+   - [ ] 节点点击系统
+   - [ ] 三层面板切换
+   - [ ] 代码高亮显示
+   - [ ] 运行状态关联
+
+4. **第四阶段：可视化**
+   - [ ] 向量空间2D展示
+   - [ ] 相似度计算动画
+   - [ ] 性能指标图表
+   - [ ] 对比展示面板
+
+5. **第五阶段：优化完善**
+   - [ ] 响应式适配
+   - [ ] 性能优化
+   - [ ] 错误处理
+   - [ ] 用户引导
+
+### ✅ V4预期成果
+
+1. **教育价值提升**
+   - 用户能深入理解每个技术选择的原因
+   - 通过类比和可视化降低理解门槛
+   - 提供可运行的代码示例
+
+2. **交互体验增强**
+   - 支持自主探索式学习
+   - 点击任意组件查看详情
+   - 代码与运行状态实时关联
+
+3. **知识完整性**
+   - 覆盖RAG系统全流程
+   - 从原理到实现到运行
+   - 理论与实践结合
+
+4. **视觉呈现优化**
+   - 清晰的信息层次
+   - 流畅的过渡动画
+   - 专业的视觉设计
+
+---
+
+**文档版本**: 2.0  
+**更新时间**: 2025-01-11  
 **作者**: RAG System Team

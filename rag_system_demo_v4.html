@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG系统V2.0架构 - 深度交互式学习平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .header .features {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 0.95em;
+        }
+
+        .header .features span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 主布局：左侧控制面板，中间流程图，右侧信息面板 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr 400px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* 左侧控制面板 */
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+        }
+
+        .control-section h3 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 0.95em;
+        }
+
+        .mode-btn:hover {
+            border-color: #2a5298;
+            transform: translateX(5px);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .mode-btn .subtitle {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        /* 深度学习卡片 */
+        .learning-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .learning-card h4 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+
+        .concept-box {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .concept-box strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* 中间流程可视化区域 */
+        .flow-visualization {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 85vh;
+        }
+
+        .stage-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        /* 节点样式 */
+        .flow-node {
+            fill: #f0f4ff;
+            stroke: #667eea;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .flow-node:hover {
+            fill: #e8eeff;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.3));
+        }
+
+        .flow-node.active {
+            fill: #667eea;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
+        }
+
+        .flow-node.completed {
+            fill: #d4edda;
+            stroke: #28a745;
+        }
+
+        .flow-node.clickable {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .node-text {
+            fill: #333;
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .node-text.active {
+            fill: white;
+            font-weight: bold;
+        }
+
+        /* 管道连线 */
+        .pipeline-path {
+            fill: none;
+            stroke: #e0e0e0;
+            stroke-width: 3;
+            stroke-dasharray: 5, 5;
+        }
+
+        .pipeline-path.active {
+            stroke: #667eea;
+            stroke-dasharray: none;
+            animation: pulseStroke 1s infinite;
+        }
+
+        @keyframes pulseStroke {
+            0%, 100% { stroke-width: 3; }
+            50% { stroke-width: 5; }
+        }
+
+        /* 右侧信息面板 */
+        .info-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .info-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .info-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .info-tab:hover {
+            color: #2a5298;
+        }
+
+        .info-tab.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .info-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 代码块样式 */
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+
+        .code-block .keyword {
+            color: #569cd6;
+        }
+
+        .code-block .string {
+            color: #ce9178;
+        }
+
+        .code-block .comment {
+            color: #6a9955;
+        }
+
+        .code-block .function {
+            color: #dcdcaa;
+        }
+
+        /* 对比表格 */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+        }
+
+        .comparison-table th {
+            background: #f8f9fa;
+            color: #2a5298;
+            font-weight: 600;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .comparison-table .check {
+            color: #28a745;
+        }
+
+        .comparison-table .cross {
+            color: #dc3545;
+        }
+
+        /* 向量空间可视化 */
+        .vector-space-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .vector-canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            margin: 10px auto;
+        }
+
+        /* 性能指标 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        .metric-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* 节点详情弹窗 */
+        .node-detail-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .node-detail-modal.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h3 {
+            color: #2a5298;
+            font-size: 1.3em;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #dc3545;
+        }
+
+        /* 类比说明框 */
+        .analogy-box {
+            background: #fffbf0;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .analogy-box h5 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .analogy-box .analogy-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+        .analogy-box .icon {
+            font-size: 1.5em;
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1600px) {
+            .main-layout {
+                grid-template-columns: 280px 1fr 350px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-panel,
+            .info-panel {
+                max-height: none;
+            }
+        }
+
+        /* 提示框 */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            max-width: 300px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            line-height: 1.4;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        /* 深度解释面板 */
+        .deep-explanation {
+            background: #f0f8ff;
+            border: 2px solid #2a5298;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .deep-explanation h4 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .explanation-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .explanation-section h5 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        /* 加载动画 */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 RAG系统V2.0架构 - 深度交互式学习平台</h1>
+            <p>点击每个组件深入了解原理、查看代码、观察运行状态</p>
+            <div class="features">
+                <span>📚 深度教学</span>
+                <span>🔍 向量语义搜索</span>
+                <span>🤖 双模型架构</span>
+                <span>💻 真实代码展示</span>
+                <span>⚡ 实时数据流</span>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- 左侧控制面板 -->
+            <div class="control-panel">
+                <div class="control-section">
+                    <h3>🎮 系统模式</h3>
+                    <div class="mode-selector">
+                        <button class="mode-btn active" onclick="switchMode('dev')">
+                            🛠️ 开发态 - 系统配置
+                            <div class="subtitle">理解组件初始化原理</div>
+                        </button>
+                        <button class="mode-btn" onclick="switchMode('manage')">
+                            📋 管理态 - 文档处理
+                            <div class="subtitle">学习向量化过程</div>
+                        </button>
+                        <button class="mode-btn" onclick="switchMode('runtime')">
+                            🚀 运行态 - 查询处理
+                            <div class="subtitle">体验完整数据流</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 深度学习：向量数据库 vs 传统数据库 -->
+                <div class="learning-card">
+                    <h4>🎓 为什么用向量数据库？</h4>
+                    <div class="concept-box">
+                        <strong>传统数据库的局限：</strong>
+                        只能精确匹配关键词，无法理解语义
+                    </div>
+                    <div class="concept-box">
+                        <strong>向量数据库的优势：</strong>
+                        理解"意思相近"的内容，支持语义搜索
+                    </div>
+                    <div class="analogy-box">
+                        <h5>💡 生活类比</h5>
+                        <div class="analogy-item">
+                            <span class="icon">📚</span>
+                            <span>传统DB = 图书馆书名索引</span>
+                        </div>
+                        <div class="analogy-item">
+                            <span class="icon">🧠</span>
+                            <span>向量DB = 图书管理员的知识</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 查询示例对比 -->
+                <div class="control-section">
+                    <h3>🔍 查询对比演示</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>查询</th>
+                                <th>传统DB</th>
+                                <th>向量DB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Python"</td>
+                                <td class="check">✅ 找到</td>
+                                <td class="check">✅ 找到更多</td>
+                            </tr>
+                            <tr>
+                                <td>"派森"</td>
+                                <td class="cross">❌ 找不到</td>
+                                <td class="check">✅ 理解同义</td>
+                            </tr>
+                            <tr>
+                                <td>"如何定义函数"</td>
+                                <td class="cross">❌ 需要精确</td>
+                                <td class="check">✅ 语义理解</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 性能指标 -->
+                <div class="control-section">
+                    <h3>📊 系统状态</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-value" id="time-metric">0.0s</div>
+                            <div class="metric-label">处理时间</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="docs-metric">0</div>
+                            <div class="metric-label">文档数</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="vectors-metric">0</div>
+                            <div class="metric-label">向量维度</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="similarity-metric">0%</div>
+                            <div class="metric-label">相似度</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间流程可视化 -->
+            <div class="flow-visualization">
+                <div class="stage-title" id="stage-title">🛠️ 开发态 - 系统初始化</div>
+                
+                <!-- 开发态可视化 -->
+                <div id="dev-flow" class="flow-content">
+                    <svg class="pipeline-svg" viewBox="0 0 900 600" style="width: 100%; height: 500px;">
+                        <!-- 配置读取节点 -->
+                        <g class="node-group" onclick="showNodeDetail('config')">
+                            <rect x="50" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="config-node"/>
+                            <text x="125" y="85" class="node-text">📄 配置读取</text>
+                            <text x="125" y="105" class="node-text" style="font-size: 10px;">.env文件</text>
+                        </g>
+                        
+                        <!-- 向量数据库节点 - 可点击了解深度原理 -->
+                        <g class="node-group" onclick="showNodeDetail('vectordb')">
+                            <rect x="250" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="vectordb-node"/>
+                            <text x="325" y="85" class="node-text">🗄️ 向量数据库</text>
+                            <text x="325" y="105" class="node-text" style="font-size: 10px;">ChromaDB</text>
+                        </g>
+                        
+                        <!-- 嵌入模型节点 - 可点击了解MiniLM-L6 -->
+                        <g class="node-group" onclick="showNodeDetail('embedding')">
+                            <rect x="450" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="embedding-node"/>
+                            <text x="525" y="85" class="node-text">🔢 嵌入模型</text>
+                            <text x="525" y="105" class="node-text" style="font-size: 10px;">MiniLM-L6</text>
+                        </g>
+                        
+                        <!-- AI模型配置节点 -->
+                        <g class="node-group" onclick="showNodeDetail('ai-config')">
+                            <rect x="150" y="200" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="ai-config-node"/>
+                            <text x="225" y="235" class="node-text">🤖 AI模型配置</text>
+                            <text x="225" y="255" class="node-text" style="font-size: 10px;">DeepSeek双模型</text>
+                        </g>
+                        
+                        <!-- 智能路由器节点 - 可点击了解路由决策 -->
+                        <g class="node-group" onclick="showNodeDetail('router')">
+                            <rect x="350" y="200" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="router-node"/>
+                            <text x="425" y="235" class="node-text">🚦 智能路由器</text>
+                            <text x="425" y="255" class="node-text" style="font-size: 10px;">任务分发</text>
+                        </g>
+                        
+                        <!-- 连接线 -->
+                        <path d="M200,90 L250,90" class="pipeline-path" id="path1"/>
+                        <path d="M400,90 L450,90" class="pipeline-path" id="path2"/>
+                        <path d="M325,130 L325,170 L225,170 L225,200" class="pipeline-path" id="path3"/>
+                        <path d="M300,240 L350,240" class="pipeline-path" id="path4"/>
+                        
+                        <!-- 点击提示 -->
+                        <text x="450" y="350" style="fill: #667eea; font-size: 14px; text-anchor: middle;">
+                            💡 点击任意组件查看详细信息
+                        </text>
+                    </svg>
+                    
+                    <!-- MiniLM-L6深度解释 -->
+                    <div class="deep-explanation">
+                        <h4>🔬 MiniLM-L6模型：文本如何变成向量？</h4>
+                        <div class="explanation-section">
+                            <h5>1️⃣ 分词（Tokenization）</h5>
+                            <p>"Python编程基础" → ["Python", "编程", "基础"]</p>
+                        </div>
+                        <div class="explanation-section">
+                            <h5>2️⃣ 编码（Encoding）</h5>
+                            <p>["Python", "编程", "基础"] → [101, 2348, 1523, 102]</p>
+                        </div>
+                        <div class="explanation-section">
+                            <h5>3️⃣ 嵌入（Embedding）</h5>
+                            <p>[101, 2348, 1523, 102] → [0.23, -0.45, 0.67, ...] (384维)</p>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># 实际Python代码</span>
+<span class="keyword">from</span> sentence_transformers <span class="keyword">import</span> SentenceTransformer
+
+<span class="comment"># 加载模型（仅25MB，轻量高效）</span>
+model = SentenceTransformer(<span class="string">'all-MiniLM-L6-v2'</span>)
+
+<span class="comment"># 文本转向量</span>
+text = <span class="string">"Python编程基础"</span>
+vector = model.encode(text)  <span class="comment"># 返回384维向量</span>
+<span class="keyword">print</span>(f<span class="string">"向量维度: {len(vector)}"</span>)  <span class="comment"># 输出: 384</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 管理态可视化 -->
+                <div id="manage-flow" class="flow-content" style="display: none;">
+                    <svg class="pipeline-svg" viewBox="0 0 900 600" style="width: 100%; height: 500px;">
+                        <!-- 文档处理流程节点 -->
+                        <g class="node-group" onclick="showNodeDetail('doc-input')">
+                            <rect x="50" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="doc-input-node"/>
+                            <text x="125" y="85" class="node-text">📥 文档输入</text>
+                            <text x="125" y="105" class="node-text" style="font-size: 10px;">MD/PDF/TXT</text>
+                        </g>
+                        
+                        <g class="node-group" onclick="showNodeDetail('doc-parse')">
+                            <rect x="250" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="doc-parse-node"/>
+                            <text x="325" y="85" class="node-text">🔍 文档解析</text>
+                            <text x="325" y="105" class="node-text" style="font-size: 10px;">提取内容</text>
+                        </g>
+                        
+                        <g class="node-group" onclick="showNodeDetail('chunk')">
+                            <rect x="450" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="chunk-node"/>
+                            <text x="525" y="85" class="node-text">✂️ 文本分块</text>
+                            <text x="525" y="105" class="node-text" style="font-size: 10px;">500字符/块</text>
+                        </g>
+                        
+                        <g class="node-group" onclick="showNodeDetail('vectorize')">
+                            <rect x="650" y="50" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="vectorize-node"/>
+                            <text x="725" y="85" class="node-text">🔢 向量化</text>
+                            <text x="725" y="105" class="node-text" style="font-size: 10px;">384维向量</text>
+                        </g>
+                        
+                        <g class="node-group" onclick="showNodeDetail('store')">
+                            <rect x="350" y="250" width="150" height="80" rx="10" 
+                                  class="flow-node clickable" id="store-node"/>
+                            <text x="425" y="285" class="node-text">💾 数据存储</text>
+                            <text x="425" y="305" class="node-text" style="font-size: 10px;">ChromaDB</text>
+                        </g>
+                        
+                        <!-- 连接线 -->
+                        <path d="M200,90 L250,90" class="pipeline-path"/>
+                        <path d="M400,90 L450,90" class="pipeline-path"/>
+                        <path d="M600,90 L650,90" class="pipeline-path"/>
+                        <path d="M725,130 L725,190 L425,190 L425,250" class="pipeline-path"/>
+                    </svg>
+                    
+                    <!-- 分块策略解释 -->
+                    <div class="deep-explanation">
+                        <h4>📐 为什么要分块？如何分块？</h4>
+                        <div class="explanation-section">
+                            <h5>为什么分块？</h5>
+                            <ul>
+                                <li>模型输入长度限制（MiniLM-L6最大256 tokens）</li>
+                                <li>提高搜索精度（小块更容易匹配）</li>
+                                <li>优化存储和检索效率</li>
+                            </ul>
+                        </div>
+                        <div class="explanation-section">
+                            <h5>分块策略</h5>
+                            <p><strong>块大小：</strong>500字符</p>
+                            <p><strong>重叠：</strong>100字符</p>
+                            <p><strong>原因：</strong>保持上下文连贯性</p>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># 文档分块实现</span>
+<span class="keyword">def</span> <span class="function">chunk_text</span>(text, chunk_size=<span class="number">500</span>, overlap=<span class="number">100</span>):
+    chunks = []
+    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">0</span>, len(text), chunk_size - overlap):
+        chunk = text[i:i + chunk_size]
+        chunks.append(chunk)
+    <span class="keyword">return</span> chunks
+
+<span class="comment"># 示例</span>
+text = <span class="string">"Python是一种高级编程语言..."</span> * <span class="number">100</span>
+chunks = chunk_text(text)
+<span class="keyword">print</span>(f<span class="string">"文档被分成 {len(chunks)} 块"</span>)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 运行态可视化 -->
+                <div id="runtime-flow" class="flow-content" style="display: none;">
+                    <!-- 完整的V2.0请求处理流程 -->
+                    <div class="deep-explanation">
+                        <h4>🚀 V2.0双模型智能路由架构</h4>
+                        <div class="explanation-section">
+                            <h5>🤖 DeepSeek-V3：工具调用专家</h5>
+                            <p>专门处理需要调用搜索、数据库等工具的任务</p>
+                        </div>
+                        <div class="explanation-section">
+                            <h5>🧠 DeepSeek-R1：推理分析专家</h5>
+                            <p>专门处理需要深度思考和逻辑推理的任务</p>
+                        </div>
+                        <div class="explanation-section">
+                            <h5>🚦 智能路由决策</h5>
+                            <p>根据查询类型自动选择最合适的模型</p>
+                        </div>
+                    </div>
+                    
+                    <svg class="pipeline-svg" viewBox="0 0 1000 800" style="width: 100%; height: 700px;">
+                        <!-- 完整的11步流程 -->
+                        
+                        <!-- Step 1: 用户输入 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('user-input')">
+                            <rect x="50" y="50" width="120" height="60" rx="10" 
+                                  class="flow-node clickable" id="user-input-node"/>
+                            <text x="110" y="75" class="node-text">🔍 用户输入</text>
+                            <text x="110" y="95" class="node-text" style="font-size: 10px;">查询问题</text>
+                        </g>
+                        
+                        <!-- Step 2: API接收 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('api-receive')">
+                            <rect x="220" y="50" width="120" height="60" rx="10" 
+                                  class="flow-node clickable" id="api-receive-node"/>
+                            <text x="280" y="75" class="node-text">🌐 API接收</text>
+                            <text x="280" y="95" class="node-text" style="font-size: 10px;">FastAPI</text>
+                        </g>
+                        
+                        <!-- Step 3: 会话管理 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('session-mgmt')">
+                            <rect x="390" y="50" width="120" height="60" rx="10" 
+                                  class="flow-node clickable" id="session-mgmt-node"/>
+                            <text x="450" y="75" class="node-text">📋 会话管理</text>
+                            <text x="450" y="95" class="node-text" style="font-size: 10px;">上下文</text>
+                        </g>
+                        
+                        <!-- Step 4: 工具准备 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('tool-prep')">
+                            <rect x="560" y="50" width="120" height="60" rx="10" 
+                                  class="flow-node clickable" id="tool-prep-node"/>
+                            <text x="620" y="75" class="node-text">🔧 工具准备</text>
+                            <text x="620" y="95" class="node-text" style="font-size: 10px;">格式转换</text>
+                        </g>
+                        
+                        <!-- Step 5: 路由决策 (核心) -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('router-decision')">
+                            <rect x="350" y="180" width="180" height="70" rx="10" 
+                                  class="flow-node clickable" id="router-decision-node"
+                                  style="fill: #fff3cd; stroke: #ffc107; stroke-width: 3;"/>
+                            <text x="440" y="210" class="node-text" style="font-weight: bold;">🚦 路由决策</text>
+                            <text x="440" y="230" class="node-text" style="font-size: 10px;">智能判断</text>
+                        </g>
+                        
+                        <!-- 左分支: 工具调用路径 -->
+                        <!-- Step 6: V3模型 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('model-v3')">
+                            <rect x="150" y="320" width="140" height="60" rx="10" 
+                                  class="flow-node clickable" id="model-v3-node"
+                                  style="fill: #e8f5e8; stroke: #28a745;"/>
+                            <text x="220" y="345" class="node-text">🔧 DeepSeek-V3</text>
+                            <text x="220" y="365" class="node-text" style="font-size: 10px;">工具调用</text>
+                        </g>
+                        
+                        <!-- Step 7: 工具调用 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('tool-call')">
+                            <rect x="150" y="420" width="140" height="60" rx="10" 
+                                  class="flow-node clickable" id="tool-call-node"/>
+                            <text x="220" y="445" class="node-text">🛠️ 工具调用</text>
+                            <text x="220" y="465" class="node-text" style="font-size: 10px;">search_course</text>
+                        </g>
+                        
+                        <!-- Step 8: 向量搜索 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('vector-search')">
+                            <rect x="150" y="520" width="140" height="60" rx="10" 
+                                  class="flow-node clickable" id="vector-search-node"/>
+                            <text x="220" y="545" class="node-text">🔍 向量搜索</text>
+                            <text x="220" y="565" class="node-text" style="font-size: 10px;">ChromaDB</text>
+                        </g>
+                        
+                        <!-- 右分支: 直接推理路径 -->
+                        <!-- R1直接处理 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('model-r1-direct')">
+                            <rect x="590" y="320" width="140" height="60" rx="10" 
+                                  class="flow-node clickable" id="model-r1-direct-node"
+                                  style="fill: #ffe8e8; stroke: #dc3545;"/>
+                            <text x="660" y="345" class="node-text">🧠 DeepSeek-R1</text>
+                            <text x="660" y="365" class="node-text" style="font-size: 10px;">直接推理</text>
+                        </g>
+                        
+                        <!-- Step 9: 模型切换 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('model-switch')">
+                            <rect x="350" y="420" width="180" height="60" rx="10" 
+                                  class="flow-node clickable" id="model-switch-node"
+                                  style="fill: #f0f4ff; stroke: #667eea; stroke-width: 2;"/>
+                            <text x="440" y="445" class="node-text">🔄 模型切换</text>
+                            <text x="440" y="465" class="node-text" style="font-size: 10px;">V3 → R1</text>
+                        </g>
+                        
+                        <!-- Step 10: 结果整合 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('result-integrate')">
+                            <rect x="350" y="520" width="180" height="60" rx="10" 
+                                  class="flow-node clickable" id="result-integrate-node"
+                                  style="fill: #ffe8e8; stroke: #dc3545;"/>
+                            <text x="440" y="545" class="node-text">🧩 结果整合</text>
+                            <text x="440" y="565" class="node-text" style="font-size: 10px;">R1处理</text>
+                        </g>
+                        
+                        <!-- Step 11: 最终响应 -->
+                        <g class="node-group" onclick="showRuntimeNodeDetail('final-response')">
+                            <rect x="350" y="620" width="180" height="60" rx="10" 
+                                  class="flow-node clickable" id="final-response-node"
+                                  style="fill: #d4edda; stroke: #28a745; stroke-width: 3;"/>
+                            <text x="440" y="645" class="node-text" style="font-weight: bold;">📤 最终响应</text>
+                            <text x="440" y="665" class="node-text" style="font-size: 10px;">返回答案</text>
+                        </g>
+                        
+                        <!-- 连接线 - 主流程 -->
+                        <path d="M170,80 L220,80" class="pipeline-path"/>
+                        <path d="M340,80 L390,80" class="pipeline-path"/>
+                        <path d="M510,80 L560,80" class="pipeline-path"/>
+                        <path d="M620,110 L620,150 L440,150 L440,180" class="pipeline-path"/>
+                        
+                        <!-- 左分支连线 (工具路径) -->
+                        <path d="M350,215 L220,215 L220,320" class="pipeline-path" id="tool-path"
+                              style="stroke: #28a745; stroke-dasharray: 10,5;"/>
+                        <path d="M220,380 L220,420" class="pipeline-path" style="stroke: #28a745;"/>
+                        <path d="M220,480 L220,520" class="pipeline-path" style="stroke: #28a745;"/>
+                        <path d="M290,550 L350,550" class="pipeline-path" style="stroke: #28a745;"/>
+                        
+                        <!-- 右分支连线 (直接路径) -->
+                        <path d="M530,215 L660,215 L660,320" class="pipeline-path" id="direct-path"
+                              style="stroke: #dc3545; stroke-dasharray: 10,5;"/>
+                        <path d="M660,380 L660,450 L530,450" class="pipeline-path" style="stroke: #dc3545;"/>
+                        
+                        <!-- 模型切换连线 -->
+                        <path d="M290,350 L350,350 L350,420" class="pipeline-path" 
+                              style="stroke: #667eea; stroke-width: 2;"/>
+                        <path d="M440,480 L440,520" class="pipeline-path" style="stroke: #dc3545;"/>
+                        <path d="M440,580 L440,620" class="pipeline-path" style="stroke: #28a745;"/>
+                        
+                        <!-- 标注文字 -->
+                        <text x="250" y="200" style="fill: #28a745; font-size: 12px;">需要搜索</text>
+                        <text x="550" y="200" style="fill: #dc3545; font-size: 12px;">直接回答</text>
+                        <text x="320" y="400" style="fill: #667eea; font-size: 12px;">切换模型</text>
+                        
+                        <!-- 点击提示 -->
+                        <text x="500" y="750" style="fill: #667eea; font-size: 14px; text-anchor: middle;">
+                            💡 点击任意节点查看详细信息
+                        </text>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 右侧信息面板 -->
+            <div class="info-panel">
+                <div class="info-tabs">
+                    <button class="info-tab active" onclick="switchInfoTab('concept')">
+                        📚 概念原理
+                    </button>
+                    <button class="info-tab" onclick="switchInfoTab('code')">
+                        💻 代码实现
+                    </button>
+                    <button class="info-tab" onclick="switchInfoTab('runtime')">
+                        🚀 运行状态
+                    </button>
+                </div>
+
+                <!-- 概念原理标签页 -->
+                <div id="concept-tab" class="tab-content active">
+                    <h3>📚 核心概念</h3>
+                    <div class="learning-card">
+                        <h4>向量数据库 vs 传统数据库</h4>
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>特性</th>
+                                    <th>传统数据库</th>
+                                    <th>向量数据库</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>搜索方式</td>
+                                    <td>关键词匹配</td>
+                                    <td>语义理解</td>
+                                </tr>
+                                <tr>
+                                    <td>查询语言</td>
+                                    <td>SQL</td>
+                                    <td>向量相似度</td>
+                                </tr>
+                                <tr>
+                                    <td>数据格式</td>
+                                    <td>结构化表格</td>
+                                    <td>高维向量</td>
+                                </tr>
+                                <tr>
+                                    <td>适用场景</td>
+                                    <td>精确查询</td>
+                                    <td>相似性搜索</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 向量空间可视化 -->
+                    <div class="vector-space-container">
+                        <h4>🌌 向量空间可视化</h4>
+                        <canvas id="vector-canvas" class="vector-canvas" width="350" height="300"></canvas>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            红点：查询向量 | 蓝点：文档向量 | 绿线：相似度连接
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 代码实现标签页 -->
+                <div id="code-tab" class="tab-content">
+                    <h3>💻 代码实现</h3>
+                    <div id="code-display">
+                        <p style="color: #666; text-align: center; padding: 20px;">
+                            点击左侧流程图中的组件查看对应代码
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 运行状态标签页 -->
+                <div id="runtime-tab" class="tab-content">
+                    <h3>🚀 运行状态</h3>
+                    <div id="runtime-display">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-value">🟢</div>
+                                <div class="metric-label">系统状态</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">0ms</div>
+                                <div class="metric-label">响应时间</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">0MB</div>
+                                <div class="metric-label">内存使用</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">0%</div>
+                                <div class="metric-label">CPU使用</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #2a5298; margin-bottom: 10px;">📝 运行日志</h4>
+                            <div id="runtime-log" style="font-family: monospace; font-size: 0.9em; color: #666;">
+                                [系统] 等待操作...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 节点详情弹窗 -->
+        <div class="modal-overlay" onclick="closeNodeDetail()"></div>
+        <div class="node-detail-modal" id="node-detail-modal">
+            <div class="modal-header">
+                <h3 id="modal-title">组件详情</h3>
+                <button class="modal-close" onclick="closeNodeDetail()">✕</button>
+            </div>
+            <div id="modal-content">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div style="background: white; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <button class="btn" onclick="startDemo()">▶️ 开始演示</button>
+                    <button class="btn btn-secondary" onclick="resetDemo()">🔄 重置</button>
+                </div>
+                <div class="progress-bar" style="flex: 1; margin: 0 20px;">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div style="color: #666;">
+                    <span id="status-text">准备就绪</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // 全局状态管理
+        let currentMode = 'dev';
+        let isProcessing = false;
+        let currentStep = 0;
+        
+        // 节点详细信息数据
+        const nodeDetails = {
+            'config': {
+                title: '📄 环境配置',
+                concept: {
+                    why: '系统需要知道如何连接各个服务和API',
+                    what: '从.env文件读取配置参数',
+                    how: '使用python-dotenv库加载环境变量'
+                },
+                code: `<span class="comment"># backend/config.py</span>
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseSettings
+
+<span class="keyword">class</span> <span class="function">Config</span>(BaseSettings):
+    <span class="comment"># AI模型配置</span>
+    LLM_PROVIDER: str = <span class="string">"deepseek"</span>
+    LLM_API_KEY: str
+    LLM_BASE_URL: str
+    
+    <span class="comment"># 双模型配置</span>
+    MODEL_REASON: str = <span class="string">"DeepSeek-R1"</span>
+    MODEL_TOOLCALL: str = <span class="string">"DeepSeek-V3"</span>
+    
+    <span class="comment"># 向量数据库配置</span>
+    CHROMA_PATH: str = <span class="string">"./chroma_db"</span>
+    EMBEDDING_MODEL: str = <span class="string">"all-MiniLM-L6-v2"</span>
+    
+    <span class="keyword">class</span> Config:
+        env_file = <span class="string">".env"</span>`,
+                runtime: {
+                    status: '已加载',
+                    configs: {
+                        'API提供商': 'DeepSeek',
+                        '向量数据库': 'ChromaDB',
+                        '嵌入模型': 'MiniLM-L6'
+                    }
+                }
+            },
+            'vectordb': {
+                title: '🗄️ 向量数据库',
+                concept: {
+                    why: '传统数据库无法理解"Python"和"派森"是同一个意思',
+                    what: 'ChromaDB是专门存储和检索向量的数据库',
+                    how: '通过计算向量之间的余弦相似度找到语义相近的内容'
+                },
+                code: `<span class="comment"># backend/vector_store.py</span>
+<span class="keyword">import</span> chromadb
+<span class="keyword">from</span> chromadb.config <span class="keyword">import</span> Settings
+
+<span class="keyword">class</span> <span class="function">VectorStore</span>:
+    <span class="keyword">def</span> <span class="function">__init__</span>(self, chroma_path: str):
+        <span class="comment"># 初始化ChromaDB客户端</span>
+        self.client = chromadb.PersistentClient(
+            path=chroma_path,
+            settings=Settings(anonymized_telemetry=<span class="keyword">False</span>)
+        )
+        
+    <span class="keyword">def</span> <span class="function">search</span>(self, query: str, k: int = <span class="number">5</span>):
+        <span class="comment"># 将查询转换为向量</span>
+        query_vector = self.embed(query)
+        
+        <span class="comment"># 使用余弦相似度搜索</span>
+        results = self.collection.query(
+            query_embeddings=[query_vector],
+            n_results=k
+        )
+        <span class="keyword">return</span> results`,
+                runtime: {
+                    status: '运行中',
+                    metrics: {
+                        '存储文档': 1250,
+                        '向量维度': 384,
+                        '查询延迟': '45ms'
+                    }
+                }
+            },
+            'embedding': {
+                title: '🔢 嵌入模型',
+                concept: {
+                    why: '计算机不能直接理解文字，需要转换成数字',
+                    what: 'MiniLM-L6将文本转换为384维向量',
+                    how: '通过深度学习模型编码语义信息'
+                },
+                code: `<span class="comment"># 为什么选择MiniLM-L6？</span>
+<span class="comment"># 1. 模型小巧：仅25MB（BERT需要420MB）</span>
+<span class="comment"># 2. 速度快：推理速度是BERT的5倍</span>
+<span class="comment"># 3. 多语言：支持中英文等多种语言</span>
+<span class="comment"># 4. 效果好：在语义相似度任务上表现优秀</span>
+
+<span class="keyword">from</span> sentence_transformers <span class="keyword">import</span> SentenceTransformer
+
+<span class="comment"># 加载模型</span>
+model = SentenceTransformer(<span class="string">'all-MiniLM-L6-v2'</span>)
+
+<span class="comment"># 文本转向量示例</span>
+texts = [
+    <span class="string">"Python是一种编程语言"</span>,
+    <span class="string">"派森是一门编程语言"</span>,
+    <span class="string">"Java是一种编程语言"</span>
+]
+
+vectors = model.encode(texts)
+<span class="comment"># vectors.shape = (3, 384)</span>
+
+<span class="comment"># 计算相似度</span>
+<span class="keyword">from</span> sklearn.metrics.pairwise <span class="keyword">import</span> cosine_similarity
+sim_matrix = cosine_similarity(vectors)
+<span class="comment"># Python vs 派森: 0.95 (高相似度)</span>
+<span class="comment"># Python vs Java: 0.72 (中等相似度)</span>`,
+                runtime: {
+                    status: '已加载',
+                    metrics: {
+                        '模型大小': '25MB',
+                        '向量维度': 384,
+                        '编码速度': '1000句/秒'
+                    }
+                }
+            },
+            'ai-config': {
+                title: '🤖 AI模型配置',
+                concept: {
+                    why: '不同任务需要不同能力的模型',
+                    what: 'DeepSeek双模型架构：V3处理工具调用，R1处理推理',
+                    how: '根据任务类型智能路由到合适的模型'
+                },
+                code: `<span class="comment"># backend/ai_generator.py</span>
+<span class="keyword">class</span> <span class="function">AIGenerator</span>:
+    <span class="keyword">def</span> <span class="function">__init__</span>(self):
+        <span class="comment"># 双模型配置</span>
+        self.model_reason = <span class="string">"DeepSeek-R1"</span>  <span class="comment"># 推理专用</span>
+        self.model_toolcall = <span class="string">"DeepSeek-V3"</span>  <span class="comment"># 工具调用专用</span>
+        
+    <span class="keyword">def</span> <span class="function">route_query</span>(self, query: str, has_tools: bool):
+        <span class="comment"># 智能路由决策</span>
+        <span class="keyword">if</span> has_tools and self._needs_search(query):
+            <span class="comment"># 需要搜索课程内容</span>
+            <span class="keyword">return</span> self.model_toolcall  <span class="comment"># 使用V3</span>
+        <span class="keyword">else</span>:
+            <span class="comment"># 一般知识问答</span>
+            <span class="keyword">return</span> self.model_reason  <span class="comment"># 使用R1</span>
+            
+    <span class="keyword">def</span> <span class="function">_needs_search</span>(self, query: str):
+        <span class="comment"># 判断是否需要搜索</span>
+        keywords = [<span class="string">"课程"</span>, <span class="string">"章节"</span>, <span class="string">"内容"</span>, <span class="string">"学习"</span>]
+        <span class="keyword">return</span> any(kw <span class="keyword">in</span> query <span class="keyword">for</span> kw <span class="keyword">in</span> keywords)`,
+                runtime: {
+                    status: '已配置',
+                    metrics: {
+                        'R1模型': '推理任务',
+                        'V3模型': '工具调用',
+                        '降级方案': 'Claude API'
+                    }
+                }
+            },
+            'router': {
+                title: '🚦 智能路由器',
+                concept: {
+                    why: '不同查询需要不同的处理策略',
+                    what: '分析查询意图，选择最合适的处理路径',
+                    how: '基于规则和模式匹配进行决策'
+                },
+                code: `<span class="comment"># 路由决策树</span>
+<span class="keyword">def</span> <span class="function">intelligent_routing</span>(query: str, context: dict):
+    <span class="comment">"""
+    智能路由决策流程
+    
+    决策因素：
+    1. 查询类型（课程内容 vs 通用知识）
+    2. 是否需要工具调用
+    3. 上下文信息
+    4. 系统负载
+    """</span>
+    
+    <span class="comment"># Step 1: 分析查询类型</span>
+    query_type = analyze_query(query)
+    
+    <span class="comment"># Step 2: 决策路由</span>
+    <span class="keyword">if</span> query_type == <span class="string">"course_content"</span>:
+        <span class="comment"># 需要搜索课程材料</span>
+        model = <span class="string">"DeepSeek-V3"</span>
+        tools = [<span class="string">"search_course"</span>]
+        path = <span class="string">"tool_calling_path"</span>
+    <span class="keyword">elif</span> query_type == <span class="string">"general_knowledge"</span>:
+        <span class="comment"># 通用知识问答</span>
+        model = <span class="string">"DeepSeek-R1"</span>
+        tools = []
+        path = <span class="string">"direct_reasoning_path"</span>
+    <span class="keyword">else</span>:
+        <span class="comment"># 混合型查询</span>
+        model = <span class="string">"DeepSeek-V3"</span>
+        tools = [<span class="string">"search_course"</span>]
+        path = <span class="string">"hybrid_path"</span>
+        
+    <span class="keyword">return</span> {
+        <span class="string">"model"</span>: model,
+        <span class="string">"tools"</span>: tools,
+        <span class="string">"path"</span>: path
+    }`,
+                runtime: {
+                    status: '就绪',
+                    metrics: {
+                        '路由策略': '基于任务',
+                        '模型池': 2,
+                        '降级支持': '是'
+                    }
+                }
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeVectorVisualization();
+            addTooltips();
+            updateMetrics();
+        });
+
+        // 切换模式
+        function switchMode(mode) {
+            if (isProcessing) return;
+            
+            currentMode = mode;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 更新流程图
+            document.querySelectorAll('.flow-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(mode + '-flow').style.display = 'block';
+            
+            // 更新标题
+            const titles = {
+                'dev': '🛠️ 开发态 - 系统初始化',
+                'manage': '📋 管理态 - 文档处理',
+                'runtime': '🚀 运行态 - 查询处理'
+            };
+            document.getElementById('stage-title').textContent = titles[mode];
+            
+            // 重置节点状态
+            resetNodes();
+            
+            // 添加日志
+            addLog(`切换到${titles[mode]}`);
+        }
+
+        // 切换信息面板标签
+        function switchInfoTab(tab) {
+            // 更新标签状态
+            document.querySelectorAll('.info-tab').forEach(t => {
+                t.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 更新内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        // 显示节点详情
+        function showNodeDetail(nodeId) {
+            const detail = nodeDetails[nodeId];
+            if (!detail) return;
+            
+            const modal = document.getElementById('node-detail-modal');
+            const overlay = document.querySelector('.modal-overlay');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalTitle.textContent = detail.title;
+            
+            modalContent.innerHTML = `
+                <div class="info-tabs">
+                    <button class="info-tab active" onclick="switchModalTab('concept')">📚 概念原理</button>
+                    <button class="info-tab" onclick="switchModalTab('code')">💻 代码实现</button>
+                    <button class="info-tab" onclick="switchModalTab('runtime')">🚀 运行状态</button>
+                </div>
+                
+                <div id="modal-concept" class="tab-content active">
+                    <div class="concept-box">
+                        <strong>Why（为什么）：</strong>
+                        ${detail.concept.why}
+                    </div>
+                    <div class="concept-box">
+                        <strong>What（是什么）：</strong>
+                        ${detail.concept.what}
+                    </div>
+                    <div class="concept-box">
+                        <strong>How（怎么做）：</strong>
+                        ${detail.concept.how}
+                    </div>
+                </div>
+                
+                <div id="modal-code" class="tab-content" style="display: none;">
+                    <div class="code-block">${detail.code}</div>
+                </div>
+                
+                <div id="modal-runtime" class="tab-content" style="display: none;">
+                    <div class="metrics-grid">
+                        ${Object.entries(detail.runtime.metrics || {}).map(([key, value]) => `
+                            <div class="metric-item">
+                                <div class="metric-value">${value}</div>
+                                <div class="metric-label">${key}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                        <strong>状态：</strong> ${detail.runtime.status}
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+            overlay.classList.add('active');
+            
+            // 高亮对应节点
+            document.getElementById(nodeId + '-node').classList.add('active');
+        }
+
+        // 关闭节点详情
+        function closeNodeDetail() {
+            document.getElementById('node-detail-modal').classList.remove('active');
+            document.querySelector('.modal-overlay').classList.remove('active');
+            
+            // 移除节点高亮
+            document.querySelectorAll('.flow-node').forEach(node => {
+                node.classList.remove('active');
+            });
+        }
+
+        // 切换弹窗标签
+        function switchModalTab(tab) {
+            document.querySelectorAll('#node-detail-modal .info-tab').forEach(t => {
+                t.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('#node-detail-modal .tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById('modal-' + tab).style.display = 'block';
+        }
+
+        // 初始化向量空间可视化
+        function initializeVectorVisualization() {
+            const canvas = document.getElementById('vector-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(width/2, 0);
+            ctx.lineTo(width/2, height);
+            ctx.moveTo(0, height/2);
+            ctx.lineTo(width, height/2);
+            ctx.stroke();
+            
+            // 模拟文档向量（蓝点）
+            const docVectors = [
+                {x: 100, y: 80, label: 'Python基础'},
+                {x: 120, y: 100, label: '编程入门'},
+                {x: 200, y: 150, label: 'Java教程'},
+                {x: 250, y: 200, label: '数据库'},
+                {x: 150, y: 120, label: '函数定义'}
+            ];
+            
+            // 绘制文档向量
+            docVectors.forEach(vec => {
+                ctx.fillStyle = '#667eea';
+                ctx.beginPath();
+                ctx.arc(vec.x, vec.y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // 标签
+                ctx.fillStyle = '#666';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(vec.label, vec.x + 8, vec.y + 3);
+            });
+            
+            // 查询向量（红点）
+            const queryVector = {x: 110, y: 90, label: '查询：Python'};
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(queryVector.x, queryVector.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 绘制相似度连线（绿线）
+            ctx.strokeStyle = '#28a745';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            
+            // 连接最相似的文档
+            [docVectors[0], docVectors[1], docVectors[4]].forEach(vec => {
+                ctx.beginPath();
+                ctx.moveTo(queryVector.x, queryVector.y);
+                ctx.lineTo(vec.x, vec.y);
+                ctx.stroke();
+            });
+            
+            // 重置线条样式
+            ctx.setLineDash([]);
+        }
+
+        // 开始演示
+        function startDemo() {
+            if (isProcessing) return;
+            
+            isProcessing = true;
+            currentStep = 0;
+            
+            document.getElementById('status-text').textContent = '演示进行中...';
+            
+            // 根据当前模式运行不同的演示
+            if (currentMode === 'dev') {
+                runDevDemo();
+            } else if (currentMode === 'manage') {
+                runManageDemo();
+            } else if (currentMode === 'runtime') {
+                runRuntimeDemo();
+            }
+        }
+
+        // 开发态演示
+        function runDevDemo() {
+            const steps = [
+                {node: 'config-node', delay: 500},
+                {node: 'vectordb-node', delay: 800},
+                {node: 'embedding-node', delay: 600},
+                {node: 'ai-config-node', delay: 700},
+                {node: 'router-node', delay: 900}
+            ];
+            
+            runSteps(steps);
+        }
+
+        // 管理态演示
+        function runManageDemo() {
+            const steps = [
+                {node: 'doc-input-node', delay: 500},
+                {node: 'doc-parse-node', delay: 800},
+                {node: 'chunk-node', delay: 1000},
+                {node: 'vectorize-node', delay: 1200},
+                {node: 'store-node', delay: 600}
+            ];
+            
+            runSteps(steps);
+        }
+
+        // 运行态演示
+        function runRuntimeDemo() {
+            const steps = [
+                {node: 'user-input-node', delay: 300, log: '接收用户查询'},
+                {node: 'api-receive-node', delay: 400, log: 'FastAPI接收请求'},
+                {node: 'session-mgmt-node', delay: 500, log: '获取会话历史'},
+                {node: 'tool-prep-node', delay: 600, log: '准备工具定义'},
+                {node: 'router-decision-node', delay: 800, log: '🚦 智能路由决策：需要工具调用'},
+                {node: 'model-v3-node', delay: 700, log: '选择DeepSeek-V3处理工具调用'},
+                {node: 'tool-call-node', delay: 900, log: '执行search_course工具'},
+                {node: 'vector-search-node', delay: 1000, log: '向量数据库搜索完成'},
+                {node: 'model-switch-node', delay: 800, log: '🔄 模型切换：V3 → R1'},
+                {node: 'result-integrate-node', delay: 1200, log: 'R1模型整合搜索结果'},
+                {node: 'final-response-node', delay: 600, log: '✅ 生成最终答案'}
+            ];
+            
+            addLog('开始V2.0双模型处理流程');
+            runSteps(steps);
+        }
+        
+        // 显示运行态节点详情
+        function showRuntimeNodeDetail(nodeId) {
+            // 这里可以添加运行态节点的详细信息
+            showNodeDetail(nodeId);
+        }
+
+        // 执行步骤
+        function runSteps(steps) {
+            let index = 0;
+            
+            function processNext() {
+                if (index >= steps.length) {
+                    isProcessing = false;
+                    document.getElementById('status-text').textContent = '演示完成';
+                    updateProgress(100);
+                    return;
+                }
+                
+                const step = steps[index];
+                const node = document.getElementById(step.node);
+                
+                if (node) {
+                    // 激活节点
+                    node.classList.add('active');
+                    
+                    // 更新进度
+                    updateProgress((index + 1) / steps.length * 100);
+                    
+                    // 添加日志
+                    addLog(`处理：${step.node.replace('-node', '')}`);
+                }
+                
+                // 标记为完成并继续
+                setTimeout(() => {
+                    if (node) {
+                        node.classList.remove('active');
+                        node.classList.add('completed');
+                    }
+                    index++;
+                    processNext();
+                }, step.delay);
+            }
+            
+            processNext();
+        }
+
+        // 重置演示
+        function resetDemo() {
+            isProcessing = false;
+            currentStep = 0;
+            
+            // 重置所有节点
+            resetNodes();
+            
+            // 重置进度
+            updateProgress(0);
+            
+            // 重置状态
+            document.getElementById('status-text').textContent = '准备就绪';
+            
+            // 清空日志
+            document.getElementById('runtime-log').innerHTML = '[系统] 已重置';
+        }
+
+        // 重置节点状态
+        function resetNodes() {
+            document.querySelectorAll('.flow-node').forEach(node => {
+                node.classList.remove('active', 'completed');
+            });
+            document.querySelectorAll('.pipeline-path').forEach(path => {
+                path.classList.remove('active');
+            });
+        }
+
+        // 更新进度条
+        function updateProgress(percent) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+        }
+
+        // 更新指标
+        function updateMetrics() {
+            document.getElementById('time-metric').textContent = '0.0s';
+            document.getElementById('docs-metric').textContent = '0';
+            document.getElementById('vectors-metric').textContent = '384';
+            document.getElementById('similarity-metric').textContent = '0%';
+        }
+
+        // 添加日志
+        function addLog(message) {
+            const logEl = document.getElementById('runtime-log');
+            const time = new Date().toLocaleTimeString();
+            const logEntry = `[${time}] ${message}\n`;
+            logEl.textContent = logEntry + logEl.textContent;
+            
+            // 限制日志长度
+            const lines = logEl.textContent.split('\n');
+            if (lines.length > 10) {
+                logEl.textContent = lines.slice(0, 10).join('\n');
+            }
+        }
+
+        // 添加提示
+        function addTooltips() {
+            // 这里可以添加更多交互提示
+        }
+    </script>
+</body>
+</html>
