@@ -202,12 +202,18 @@ Provide only the direct answer to what was asked.
         if answer_start != -1:
             result = cleaned[answer_start:].strip()
             if result and len(result) >= config.R1_THINKING_MIN_LENGTH:
+                # 打印被清理的思考内容用于调试
+                cleaned_content = cleaned[:answer_start].strip()
+                print(f"\n[DEBUG] ========== 清理的思考内容（{answer_start}字符）==========")
+                print(cleaned_content[:500] + "..." if len(cleaned_content) > 500 else cleaned_content)
+                print("[DEBUG] ========== 思考内容结束 ==========\n")
                 print(f"[INFO] 通过答案标记清理了{answer_start}字符的思考内容")
                 return result
         
         # 步骤3：基于段落结构过滤
         paragraphs = cleaned.split('\n\n')
         filtered_paragraphs = []
+        skipped_paragraphs = []  # 记录被跳过的段落用于调试
         
         # 用于检测是否已经进入真实答案部分
         found_real_answer = False
@@ -257,6 +263,17 @@ Provide only the direct answer to what was asked.
             # 如果不是思考内容，保留该段落
             if not is_thinking:
                 filtered_paragraphs.append(para)
+            else:
+                skipped_paragraphs.append(para)
+        
+        # 如果有被跳过的段落，打印调试信息
+        if skipped_paragraphs:
+            print(f"\n[DEBUG] ========== 通过段落过滤清理的思考内容 ==========")
+            for i, para in enumerate(skipped_paragraphs[:3], 1):  # 只显示前3个段落
+                print(f"段落{i}: {para[:200]}..." if len(para) > 200 else f"段落{i}: {para}")
+            if len(skipped_paragraphs) > 3:
+                print(f"... 还有 {len(skipped_paragraphs) - 3} 个段落被过滤")
+            print("[DEBUG] ========== 思考内容结束 ==========\n")
         
         result = '\n\n'.join(filtered_paragraphs).strip()
         
