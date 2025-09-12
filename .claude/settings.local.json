@@ -16,7 +16,13 @@
       "Bash(start rag_system_demo_v4.html)",
       "Bash(git commit:*)",
       "Bash(../.venv/Scripts/python.exe -m uvicorn app:app --reload --port 8000)",
-      "Bash(npx @playwright/mcp@latest:*)"
+      "Bash(npx @playwright/mcp@latest:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_hover",
+      "Bash(curl:*)",
+      "mcp__playwright__browser_resize"
     ],
     "deny": [],
     "ask": []

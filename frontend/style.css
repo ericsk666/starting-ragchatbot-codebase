@@ -56,18 +56,12 @@ body {
     height: 100vh;
     overflow: hidden;
     margin: 0;
-    padding: 0;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
 }
 
-/* Container - Full Screen */
-.container {
-    height: 100vh;
-    width: 100vw;
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
-}
+/* Container - Removed, using body flex directly */
 
 /* Sidebar Header Styles */
 .sidebar-header {
@@ -146,22 +140,17 @@ body {
     font-size: 0.95rem;
 }
 
-/* Main Content Area with Sidebar */
-.main-content {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    background: var(--background);
-}
+/* Main Content Area - Removed, redundant wrapper */
 
-/* Left Sidebar - 无缝融合设计 */
+/* Left Sidebar - 优化后的设计 */
 .sidebar {
     width: 280px;
-    background: #fafafa;
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 1.5rem;
     overflow-y: auto;
-    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     z-index: 10;
@@ -231,17 +220,21 @@ body {
 
 .resource-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--surface);
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
     min-height: 48px;
+    border-radius: 8px;
+    margin: 2px 0;
+    position: relative;
 }
 
 .resource-item:hover {
-    background: var(--surface);
+    background: var(--surface-hover);
+    transform: translateX(2px);
 }
 
 .resource-item:last-child {
@@ -258,8 +251,7 @@ body {
     font-size: 0.85rem;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: normal;
-    word-break: break-word;
+    white-space: nowrap;
     line-height: 1.4;
     flex: 1;
 }
@@ -295,7 +287,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 0;
     background: transparent;  /* 透明，显示页面背景 */
     overflow: hidden;
 }
@@ -313,13 +305,16 @@ body {
     overflow: hidden;
 }
 
-/* Chat Input Wrapper */
+/* Chat Input Wrapper - 固定在底部 */
 .chat-input-wrapper {
-    background: var(--surface);
+    background: white;
     border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem 2rem;
+    margin-top: auto;
 }
 
-/* Chat Messages */
+/* Chat Messages - 最大化聊天空间 */
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -331,6 +326,7 @@ body {
     max-width: 900px;
     margin: 0 auto;
     width: 100%;
+    min-height: 0; /* 重要：允许flex子项收缩 */
 }
 
 /* Custom Scrollbar */
@@ -493,32 +489,36 @@ body {
     color: var(--text-secondary);
 }
 
-/* 推荐问题气泡区域 */
+/* 推荐问题气泡区域 - 网格布局优化 */
 .suggested-bubbles {
-    display: flex;
-    gap: 10px;
-    padding: 0 3rem 1.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 1rem 0 0;
     background: transparent;
-    max-width: 900px;
+    max-width: 600px;
     margin: 0 auto;
     width: 100%;
 }
 
-/* 气泡样式 */
+/* 气泡样式 - 优化为卡片式 */
 .bubble-item {
-    padding: 10px 20px;
+    padding: 12px 16px;
     background: white;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-full);
+    border-radius: 12px;
     color: var(--text-primary);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    white-space: nowrap;
+    white-space: normal;
     font-family: inherit;
+    text-align: center;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .bubble-item:hover {
@@ -625,7 +625,7 @@ body {
 .chat-input-container {
     display: flex;
     gap: 0.75rem;
-    padding: 1rem 3rem;
+    padding: 0;
     background: transparent;
     flex-shrink: 0;
     align-items: center;
@@ -1024,5 +1024,301 @@ details[open] .suggested-header::before {
 @media (max-width: 1024px) {
     .sidebar {
         width: 280px;
+    }
+}
+
+/* ============================================= */
+/* ENHANCED RESPONSIVE DESIGN                    */
+/* ============================================= */
+
+/* Mobile Devices (< 768px) */
+@media (max-width: 767px) {
+    /* Stack layout vertically */
+    body {
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+        min-height: 100vh;
+    }
+    
+    /* Full width collapsible sidebar */
+    .sidebar {
+        width: 100%;
+        max-width: 100%;
+        min-width: unset;
+        max-height: 220px;
+        overflow-y: auto;
+        margin-bottom: 0;
+    }
+    
+    /* Compact sidebar content */
+    .sidebar-header {
+        padding: 15px;
+    }
+    
+    .sidebar-title {
+        font-size: 1.25rem;
+    }
+    
+    .sidebar-subtitle {
+        font-size: 0.875rem;
+    }
+    
+    .new-chat-container {
+        padding: 0 15px 10px;
+    }
+    
+    .new-chat-button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+    
+    /* Compact resources */
+    .sidebar-section {
+        padding: 10px 15px;
+    }
+    
+    .resources-list {
+        max-height: 100px;
+    }
+    
+    .resource-item {
+        padding: 6px 8px;
+        font-size: 0.875rem;
+    }
+    
+    /* Full width main chat */
+    .chat-main {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .chat-card {
+        height: calc(100vh - 260px);
+        border-radius: 12px;
+    }
+    
+    /* Optimize messages area */
+    .chat-messages {
+        padding: 10px;
+        height: calc(100% - 140px);
+    }
+    
+    .message {
+        max-width: 92%;
+    }
+    
+    .message-content {
+        padding: 10px 14px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    
+    /* Mobile input optimization */
+    .chat-input-wrapper {
+        padding: 10px;
+    }
+    
+    .chat-input-container {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    #chatInput {
+        font-size: 16px; /* Prevents iOS zoom */
+        padding: 10px 12px;
+    }
+    
+    #sendButton {
+        min-width: 40px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+    }
+    
+    /* Compact quick buttons */
+    .suggested-bubbles {
+        padding: 8px 10px;
+        gap: 8px;
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .bubble-item {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        min-height: 44px; /* Touch target size */
+    }
+}
+
+/* Small Tablets (768px - 900px) */
+@media (min-width: 768px) and (max-width: 900px) {
+    body {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .sidebar {
+        width: 260px;
+        min-width: 260px;
+    }
+    
+    .sidebar-title {
+        font-size: 1.35rem;
+    }
+    
+    .chat-messages {
+        padding: 12px;
+    }
+    
+    .suggested-bubbles {
+        gap: 10px;
+    }
+    
+    .bubble-item {
+        padding: 9px 12px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Large Tablets / Small Laptops (901px - 1200px) */
+@media (min-width: 901px) and (max-width: 1200px) {
+    body {
+        padding: 20px;
+    }
+    
+    .sidebar {
+        width: 300px;
+    }
+    
+    .message-content {
+        font-size: 1rem;
+    }
+}
+
+/* Large Desktop (> 1600px) */
+@media (min-width: 1601px) {
+    body {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 30px;
+    }
+    
+    .sidebar {
+        width: 360px;
+        min-width: 360px;
+    }
+    
+    .sidebar-title {
+        font-size: 1.875rem;
+    }
+    
+    .message-content {
+        font-size: 1.0625rem;
+        line-height: 1.6;
+    }
+    
+    #chatInput {
+        font-size: 17px;
+        padding: 14px 16px;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    body {
+        padding: 5px;
+    }
+    
+    /* Minimize sidebar */
+    .sidebar {
+        max-height: 150px;
+    }
+    
+    .sidebar-header {
+        padding: 10px 15px;
+    }
+    
+    .sidebar-title {
+        font-size: 1.1rem;
+    }
+    
+    .sidebar-subtitle {
+        display: none;
+    }
+    
+    /* Compact chat */
+    .chat-card {
+        height: calc(100vh - 170px);
+    }
+    
+    .chat-messages {
+        padding: 8px;
+    }
+    
+    /* Hide quick buttons in landscape */
+    .suggested-bubbles {
+        display: none;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Sharper borders and shadows */
+    .chat-card,
+    .sidebar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    }
+    
+    .message {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .new-chat-button,
+    .bubble-item,
+    #sendButton {
+        min-height: 44px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .bubble-item:hover,
+    .resource-item:hover {
+        background: inherit;
+    }
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+    .message {
+        border: 2px solid currentColor;
+    }
+    
+    .chat-input-container {
+        border: 2px solid var(--text-primary);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .sidebar,
+    .chat-input-wrapper,
+    .suggested-bubbles {
+        display: none !important;
+    }
+    
+    .chat-main {
+        width: 100%;
+    }
+    
+    .chat-card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .message {
+        page-break-inside: avoid;
     }
 }

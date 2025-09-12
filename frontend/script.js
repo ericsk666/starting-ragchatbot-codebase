@@ -234,7 +234,7 @@ async function loadCourseStats() {
             if (data.course_titles && data.course_titles.length > 0) {
                 resourcesList.innerHTML = data.course_titles
                     .map(title => `
-                        <div class="resource-item">
+                        <div class="resource-item" title="${title}">
                             <span class="resource-icon">📄</span>
                             <span class="resource-name">${title}</span>
                         </div>
