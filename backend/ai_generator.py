@@ -277,6 +277,7 @@ All responses must be:
             # 这样可以避免元评论被误判为答案
             is_meta_comment = False
             meta_comment_patterns = [
+                # 原有的元评论模式
                 "the search results",
                 "the user's question", 
                 "the user is asking",
@@ -290,6 +291,52 @@ All responses must be:
                 "from lesson",
                 "lesson discusses",
                 "putting this together",
+                
+                # 新增：叙述性开头模式
+                "first, looking",
+                "looking at lesson",
+                "now, examining",
+                "next, considering",
+                "starting with",
+                "beginning with",
+                
+                # 新增：主观判断模式
+                "seems like",
+                "appears to",
+                "suggests that",
+                "might be",
+                "could be",
+                "it seems",
+                "this seems",
+                "that seems",
+                
+                # 新增：过渡性语句模式
+                "putting this all together",
+                "putting it all together",
+                "all together",
+                "so, thinking",
+                "thinking ahead",
+                "thinking about",
+                "considering this",
+                "in summary",
+                "to summarize",
+                
+                # 新增：引用描述模式
+                "it mentions",
+                "it talks about",
+                "it discusses",
+                "it highlights",
+                "it emphasizes",
+                "the lesson talks",
+                "the course mentions",
+                "the material discusses",
+                
+                # 新增：操作性描述模式
+                "looking through",
+                "going through",
+                "examining the",
+                "reviewing the",
+                "checking the",
             ]
             for pattern in meta_comment_patterns:
                 if pattern in para_lower:
@@ -336,8 +383,23 @@ All responses must be:
             
             # 过程性语言检测
             if not is_thinking:
-                process_words = ['searching', 'looking', 'checking', 'recalling', 'synthesizing', 
-                                'wait', 'hmm', 'okay', 'actually', 'but the user']
+                process_words = [
+                    # 原有的过程词
+                    'searching', 'looking', 'checking', 'recalling', 'synthesizing', 
+                    'wait', 'hmm', 'okay', 'actually', 'but the user',
+                    
+                    # 新增：认知过程词
+                    'analyzing', 'examining', 'considering', 'reviewing',
+                    'exploring', 'investigating', 'assessing', 'evaluating',
+                    
+                    # 新增：转折和推测词
+                    'perhaps', 'maybe', 'probably', 'possibly',
+                    'although', 'however', 'nonetheless', 'interestingly',
+                    
+                    # 新增：元认知表达
+                    'i notice', 'i see', 'i find', 'i observe',
+                    'it appears', 'it looks like', 'from what i',
+                ]
                 for word in process_words:
                     if word in para_lower:
                         is_thinking = True
