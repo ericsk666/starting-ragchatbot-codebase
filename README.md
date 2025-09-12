@@ -156,14 +156,15 @@ RAG系统集成测试结果: 7/7 测试通过
 
 ### 核心文档
 - [`CLAUDE.md`](CLAUDE.md) - 开发指南和项目上下文
-- [`LLM_MIGRATION_GUIDE.md`](LLM_MIGRATION_GUIDE.md) - LLM迁移完整技术方案
+- [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) - 项目结构详细说明
+- [`project_docs/technical/LLM_MIGRATION_GUIDE.md`](project_docs/technical/LLM_MIGRATION_GUIDE.md) - LLM迁移完整技术方案
 
 ### V2.0 架构文档
-- [`docs/architecture/request_flow_analysis_v2.md`](docs/architecture/request_flow_analysis_v2.md) - 双模型架构流程分析
-- [`docs/architecture/request_flow_diagram_v2.md`](docs/architecture/request_flow_diagram_v2.md) - 智能路由流程图
+- [`project_docs/technical/request_flow_analysis_v2.md`](project_docs/technical/request_flow_analysis_v2.md) - 双模型架构流程分析
+- [`project_docs/technical/request_flow_diagram_v2.md`](project_docs/technical/request_flow_diagram_v2.md) - 智能路由流程图
 
 ### 历史文档
-- [`docs/legacy/`](docs/legacy/) - V1.0版本文档存档
+- [`project_docs/technical/`](project_docs/technical/) - 技术文档归档
 
 ## 🏗️ 项目结构
 
@@ -178,12 +179,28 @@ starting-ragchatbot-codebase/
 │   ├── config.py                  # 配置管理
 │   └── app.py                     # FastAPI应用
 ├── frontend/                   # 前端界面
+│   ├── index.html                 # 主页面
+│   ├── style.css                  # 样式文件
+│   └── script.js                  # JavaScript逻辑
 ├── tests/                      # 测试套件 🆕
-├── docs/                       # 文档系统 🆕
+│   ├── unit/                      # 单元测试
+│   ├── integration/               # 集成测试
+│   ├── debug/                     # 调试脚本
+│   └── html_demos/               # HTML演示
+├── project_docs/               # 项目文档 🆕
+│   ├── planning/                  # 计划文档
+│   ├── technical/                 # 技术文档
+│   ├── implementation/            # 实施记录
+│   └── quality/                   # 质量报告
+├── docs/                       # 课程材料（RAG数据源）
+├── chroma_db/                  # 向量数据库
 ├── main.py                     # 项目入口
 ├── run.sh                      # 启动脚本
+├── PROJECT_STRUCTURE.md        # 项目结构说明
 └── README.md                   # 本文档
 ```
+
+详细的项目结构说明请查看 [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)
 
 ## 🔧 配置选项
 
@@ -270,19 +287,25 @@ DEBUG=1 uv run uvicorn app:app --reload --port 8000
 ## 📖 项目文档索引
 
 ### 🎯 入门指南
-- **[RAG_SYSTEM_COMPLETE_GUIDE.md](RAG_SYSTEM_COMPLETE_GUIDE.md)** - 🆕 RAG系统完整指南（图文详解）
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - 🆕 项目结构详细说明
+- **[project_docs/technical/RAG_SYSTEM_COMPLETE_GUIDE.md](project_docs/technical/RAG_SYSTEM_COMPLETE_GUIDE.md)** - RAG系统完整指南（图文详解）
 
 ### 核心文档
 - **[CLAUDE.md](CLAUDE.md)** - 开发指南和项目上下文
-- **[LLM_MIGRATION_GUIDE.md](LLM_MIGRATION_GUIDE.md)** - LLM迁移完整技术方案
+- **[project_docs/technical/LLM_MIGRATION_GUIDE.md](project_docs/technical/LLM_MIGRATION_GUIDE.md)** - LLM迁移完整技术方案
 
 ### V2.0 架构文档
-- **[request_flow_analysis_v2.md](request_flow_analysis_v2.md)** - V2.0双模型架构流程分析
-- **[request_flow_diagram_v2.md](request_flow_diagram_v2.md)** - V2.0智能路由流程图
+- **[project_docs/technical/request_flow_analysis_v2.md](project_docs/technical/request_flow_analysis_v2.md)** - V2.0双模型架构流程分析
+- **[project_docs/technical/request_flow_diagram_v2.md](project_docs/technical/request_flow_diagram_v2.md)** - V2.0智能路由流程图
 
 ### V1.0 归档文档
-- **[request_flow_analysis.md](request_flow_analysis.md)** - V1.0架构流程分析
-- **[request_flow_diagram.md](request_flow_diagram.md)** - V1.0系统流程图
+- **[project_docs/technical/request_flow_analysis.md](project_docs/technical/request_flow_analysis.md)** - V1.0架构流程分析
+- **[project_docs/technical/request_flow_diagram.md](project_docs/technical/request_flow_diagram.md)** - V1.0系统流程图
+
+### 项目管理文档
+- **[project_docs/planning/](project_docs/planning/)** - 功能规划和设计方案
+- **[project_docs/implementation/](project_docs/implementation/)** - 实施记录和问题修复
+- **[project_docs/quality/](project_docs/quality/)** - 质量报告和测试结果
 
 ## 📜 许可证
 

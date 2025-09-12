@@ -21,15 +21,29 @@ starting-ragchatbot-codebase/
 │   ├── config.py           # 配置管理
 │   └── ...                 # 其他核心模块
 ├── frontend/             # 前端界面代码
-├── docs/                 # 课程材料目录
+│   ├── index.html          # 主页面
+│   ├── style.css           # 样式文件
+│   └── script.js           # JavaScript逻辑
 ├── tests/                # 测试套件 (V2.0新增)
+│   ├── unit/               # 单元测试
 │   ├── integration/        # 集成测试
-│   └── unit/               # 单元测试
+│   ├── debug/              # 调试脚本
+│   └── html_demos/        # HTML演示页面
+├── project_docs/         # 项目文档 (整理后新增)
+│   ├── planning/           # 计划文档
+│   ├── technical/          # 技术文档
+│   ├── implementation/     # 实施记录
+│   └── quality/            # 质量报告
+├── docs/                 # 课程材料目录
+├── chroma_db/           # 向量数据库
 ├── main.py               # 主入口文件
 ├── run.sh                # 启动脚本
 ├── pyproject.toml        # Python项目配置
+├── PROJECT_STRUCTURE.md  # 项目结构详细说明
 └── .env                  # 环境变量配置
 ```
+
+详细的项目结构说明请查看 [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)
 
 ## 开发要求
 
@@ -164,6 +178,20 @@ uv run python tests/unit/test_deepseek_connection.py
 ```bash
 DEBUG=1 uv run uvicorn app:app --reload --port 8000
 ```
+
+## 文档管理规范
+
+### 文档组织
+- **计划文档**: 放在 `project_docs/planning/`
+- **技术文档**: 放在 `project_docs/technical/`
+- **实施记录**: 放在 `project_docs/implementation/`
+- **质量报告**: 放在 `project_docs/quality/`
+- **测试页面**: 放在 `tests/html_demos/`
+
+### 文档命名
+- 使用大写字母和下划线: `FEATURE_PLAN.md`
+- 保持命名清晰描述性
+- 版本化文档添加版本号: `request_flow_v2.md`
 
 ## 开发优先级
 1. 核心RAG功能的稳定性和准确性
