@@ -204,10 +204,17 @@ Provide only the direct answer to what was asked.
             if result and len(result) >= config.R1_THINKING_MIN_LENGTH:
                 # 打印被清理的思考内容用于调试
                 cleaned_content = cleaned[:answer_start].strip()
-                print(f"\n[DEBUG] ========== 清理的思考内容（{answer_start}字符）==========")
-                print(cleaned_content[:500] + "..." if len(cleaned_content) > 500 else cleaned_content)
-                print("[DEBUG] ========== 思考内容结束 ==========\n")
-                print(f"[INFO] 通过答案标记清理了{answer_start}字符的思考内容")
+                print(f"\n[DEBUG] ========== 通过答案标记清理的思考内容（{len(cleaned_content)}字符）==========")
+                # 按段落显示，更清晰
+                cleaned_paragraphs = cleaned_content.split('\n\n')
+                for i, para in enumerate(cleaned_paragraphs[:3], 1):
+                    preview = para[:200] + "..." if len(para) > 200 else para
+                    preview = preview.replace('\n', ' ')  # 清理换行符
+                    print(f"思考段落{i}: {preview}")
+                if len(cleaned_paragraphs) > 3:
+                    print(f"... 共{len(cleaned_paragraphs)}个思考段落被清理")
+                print("[DEBUG] ========== 思考内容结束 ==========")
+                print(f"[INFO] 找到答案标记，清理了{len(cleaned_content)}字符的思考内容\n")
                 return result
         
         # 步骤3：基于段落结构过滤
@@ -268,11 +275,25 @@ Provide only the direct answer to what was asked.
         
         # 如果有被跳过的段落，打印调试信息
         if skipped_paragraphs:
-            print(f"\n[DEBUG] ========== 通过段落过滤清理的思考内容 ==========")
-            for i, para in enumerate(skipped_paragraphs[:3], 1):  # 只显示前3个段落
-                print(f"段落{i}: {para[:200]}..." if len(para) > 200 else f"段落{i}: {para}")
-            if len(skipped_paragraphs) > 3:
-                print(f"... 还有 {len(skipped_paragraphs) - 3} 个段落被过滤")
+            print(f"\n[DEBUG] ========== 通过段落过滤清理的思考内容（共{len(skipped_paragraphs)}个段落）==========")
+            # 如果段落数量不多（<=5个），全部显示；否则显示前5个
+            display_limit = 5 if len(skipped_paragraphs) > 5 else len(skipped_paragraphs)
+            for i, para in enumerate(skipped_paragraphs[:display_limit], 1):
+                # 显示段落的前150字符，确保能看到开头内容
+                preview = para[:150] + "..." if len(para) > 150 else para
+                # 清理换行符，使输出更整洁
+                preview = preview.replace('\n', ' ')
+                print(f"段落{i}: {preview}")
+            
+            # 只有当段落数量超过5个时才显示剩余数量
+            if len(skipped_paragraphs) > display_limit:
+                # 也显示最后一个段落的预览，以便了解结尾内容
+                last_para = skipped_paragraphs[-1]
+                last_preview = last_para[:150] + "..." if len(last_para) > 150 else last_para
+                last_preview = last_preview.replace('\n', ' ')
+                print(f"...")
+                print(f"段落{len(skipped_paragraphs)}: {last_preview}")
+                print(f"（共过滤了 {len(skipped_paragraphs)} 个段落）")
             print("[DEBUG] ========== 思考内容结束 ==========\n")
         
         result = '\n\n'.join(filtered_paragraphs).strip()
