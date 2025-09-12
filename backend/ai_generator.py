@@ -132,7 +132,8 @@ Provide only the direct answer to what was asked.
                     messages=messages,
                     **self.base_params
                 )
-                return response_text
+                # 清理思考内容
+                return self._clean_thinking_content(response_text)
             
             # 处理工具调用响应
             if (hasattr(response.choices[0].message, 'tool_calls') and 
@@ -142,11 +143,109 @@ Provide only the direct answer to what was asked.
                 )
             
             # 返回普通响应
-            return response.choices[0].message.content or ""
+            content = response.choices[0].message.content or ""
+            # 清理思考内容
+            return self._clean_thinking_content(content)
             
         except Exception as e:
             print(f"[ERROR] DeepSeek响应生成失败: {e}")
             return f"抱歉，我遇到了一些技术问题。请稍后再试。"
+    
+    def _clean_thinking_content(self, response_text: str) -> str:
+        """
+        清理DeepSeek-R1响应中的思考内容
+        
+        Args:
+            response_text: 原始响应文本
+            
+        Returns:
+            清理后的响应文本
+        """
+        import re
+        from .config import config
+        
+        # 检查是否启用清理功能
+        if not config.CLEAN_R1_THINKING:
+            return response_text
+        
+        if not response_text:
+            return response_text
+        
+        original_length = len(response_text)
+        
+        # 步骤1：移除<thinking>标签及其内容
+        cleaned = re.sub(r'<thinking>.*?</thinking>', '', response_text, flags=re.DOTALL)
+        
+        # 步骤2：按段落分割并过滤
+        paragraphs = cleaned.split('\n\n')
+        filtered_paragraphs = []
+        
+        # 定义思考内容的特征模式
+        thinking_indicators = [
+            # 开头模式
+            ("Okay,", ["the user", "let me", "I see"]),
+            ("Looking", ["through", "at", "for", "into"]),
+            ("Let me", ["check", "search", "find", "look"]),
+            ("I need to", ["present", "search", "find"]),
+            ("I should", ["search", "check", "look"]),
+            ("First,", ["let me", "I'll"]),
+            ("Now,", ["let me", "I'll"]),
+            # 元评论模式
+            ("Based on", ["the search", "my search", "the retrieved"]),
+            ("From", ["the course", "what I found", "the retrieved"]),
+            ("According to", ["the search", "the retrieved"]),
+        ]
+        
+        for para in paragraphs:
+            is_thinking = False
+            para_stripped = para.strip()
+            para_lower = para_stripped.lower()
+            
+            # 检查是否匹配思考指标
+            for start, keywords in thinking_indicators:
+                if para_stripped.startswith(start):
+                    if not keywords or any(kw.lower() in para_lower for kw in keywords):
+                        is_thinking = True
+                        break
+            
+            # 检查是否包含元评论短语
+            meta_phrases = [
+                "check the search results",
+                "from the retrieved content",
+                "based on the search",
+                "let me search",
+                "i'll search",
+                "i'm searching",
+                "from the course materials",
+                "looking through the retrieved",
+                "according to the retrieved",
+                "from what i found",
+                "the search results show",
+                "based on my search",
+            ]
+            
+            for phrase in meta_phrases:
+                if phrase in para_lower:
+                    is_thinking = True
+                    break
+            
+            # 如果不是思考内容且非空，保留该段落
+            if not is_thinking and para_stripped:
+                filtered_paragraphs.append(para)
+        
+        result = '\n\n'.join(filtered_paragraphs).strip()
+        
+        # 步骤3：安全检查，避免过度清理
+        if not result or len(result) < config.R1_THINKING_MIN_LENGTH:
+            print(f"[WARNING] 清理后内容过短（{len(result)}字符，最小要求{config.R1_THINKING_MIN_LENGTH}），返回原文")
+            return response_text
+        
+        # 记录清理效果
+        cleaned_chars = original_length - len(result)
+        if cleaned_chars > 0:
+            print(f"[INFO] 清理了{cleaned_chars}字符的思考内容（{cleaned_chars*100/original_length:.1f}%）")
+        
+        return result
     
     def _generate_claude_response(self, 
                                  query: str,
@@ -261,7 +360,8 @@ Provide only the direct answer to what was asked.
                 messages=messages,
                 **self.base_params
             )
-            return final_response
+            # 清理思考内容
+            return self._clean_thinking_content(final_response)
             
         except Exception as e:
             return f"生成最终响应时出错: {str(e)}"

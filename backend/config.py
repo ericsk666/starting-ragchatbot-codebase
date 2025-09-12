@@ -44,6 +44,10 @@ class Config:
     
     # Database paths
     CHROMA_PATH: str = "./chroma_db"  # ChromaDB storage location
+    
+    # DeepSeek-R1 response cleaning settings
+    CLEAN_R1_THINKING: bool = os.getenv("CLEAN_R1_THINKING", "true").lower() == "true"
+    R1_THINKING_MIN_LENGTH: int = int(os.getenv("R1_THINKING_MIN_LENGTH", "50"))
 
 config = Config()
 
