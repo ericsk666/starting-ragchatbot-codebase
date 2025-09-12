@@ -3,6 +3,7 @@
 使用智能路由器实现双模型策略
 """
 
+import re
 import anthropic
 from typing import List, Optional, Dict, Any, Union
 from config import config
@@ -161,9 +162,6 @@ Provide only the direct answer to what was asked.
         Returns:
             清理后的响应文本
         """
-        import re
-        from config import config
-        
         # 检查是否启用清理功能
         if not config.CLEAN_R1_THINKING:
             return response_text
