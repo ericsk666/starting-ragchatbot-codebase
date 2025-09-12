@@ -174,61 +174,88 @@ Provide only the direct answer to what was asked.
         # 步骤1：移除<thinking>标签及其内容
         cleaned = re.sub(r'<thinking>.*?</thinking>', '', response_text, flags=re.DOTALL)
         
-        # 步骤2：按段落分割并过滤
+        # 步骤2：智能识别答案开始位置
+        # 寻找答案的开始标记（通常在思考后有明确的转折）
+        answer_markers = [
+            "\n\nThe available course materials",
+            "\n\nBased on the course materials",
+            "\n\nFrom the course content",
+            "\n\nAccording to the materials",
+            "\n\nThe course covers",
+            "\n\n1.",  # 编号列表开始
+            "\n\n**",  # 粗体标题开始
+            "\n\n###",  # Markdown标题
+            "\n\n##",
+            "\n\nIn the context of",
+            "\n\nTo answer your question",
+        ]
+        
+        # 尝试找到答案的开始位置
+        answer_start = -1
+        for marker in answer_markers:
+            pos = cleaned.find(marker)
+            if pos != -1:
+                answer_start = pos
+                break
+        
+        # 如果找到了明确的答案开始位置，直接返回答案部分
+        if answer_start != -1:
+            result = cleaned[answer_start:].strip()
+            if result and len(result) >= config.R1_THINKING_MIN_LENGTH:
+                print(f"[INFO] 通过答案标记清理了{answer_start}字符的思考内容")
+                return result
+        
+        # 步骤3：基于段落结构过滤
         paragraphs = cleaned.split('\n\n')
         filtered_paragraphs = []
         
-        # 定义思考内容的特征模式
-        thinking_indicators = [
-            # 开头模式
-            ("Okay,", ["the user", "let me", "I see"]),
-            ("Looking", ["through", "at", "for", "into"]),
-            ("Let me", ["check", "search", "find", "look"]),
-            ("I need to", ["present", "search", "find"]),
-            ("I should", ["search", "check", "look"]),
-            ("First,", ["let me", "I'll"]),
-            ("Now,", ["let me", "I'll"]),
-            # 元评论模式
-            ("Based on", ["the search", "my search", "the retrieved"]),
-            ("From", ["the course", "what I found", "the retrieved"]),
-            ("According to", ["the search", "the retrieved"]),
-        ]
+        # 用于检测是否已经进入真实答案部分
+        found_real_answer = False
         
         for para in paragraphs:
-            is_thinking = False
             para_stripped = para.strip()
             para_lower = para_stripped.lower()
             
-            # 检查是否匹配思考指标
-            for start, keywords in thinking_indicators:
-                if para_stripped.startswith(start):
-                    if not keywords or any(kw.lower() in para_lower for kw in keywords):
-                        is_thinking = True
-                        break
+            # 跳过空段落
+            if not para_stripped:
+                continue
             
-            # 检查是否包含元评论短语
-            meta_phrases = [
-                "check the search results",
-                "from the retrieved content",
-                "based on the search",
-                "let me search",
-                "i'll search",
-                "i'm searching",
-                "from the course materials",
-                "looking through the retrieved",
-                "according to the retrieved",
-                "from what i found",
-                "the search results show",
-                "based on my search",
-            ]
+            # 检测真实答案的开始（通常是结构化内容）
+            if not found_real_answer:
+                # 检查是否是列表项、标题或正式陈述
+                if (para_stripped.startswith(('1.', '2.', '3.', '•', '-', '*', '**', '##')) or
+                    para_stripped.startswith(('The available', 'Based on the course', 'According to', 
+                                            'In the context', 'Key points', 'Core principles'))):
+                    found_real_answer = True
+                    filtered_paragraphs.append(para)
+                    continue
             
-            for phrase in meta_phrases:
-                if phrase in para_lower:
+            # 如果已经找到真实答案，继续添加后续段落
+            if found_real_answer:
+                filtered_paragraphs.append(para)
+                continue
+            
+            # 检测思考内容的特征
+            is_thinking = False
+            
+            # 第一人称检测
+            first_person_indicators = ['i ', "i'm", "i'll", "i've", "let me", "i need", "i should", "my "]
+            for indicator in first_person_indicators:
+                if indicator in para_lower:
                     is_thinking = True
                     break
             
-            # 如果不是思考内容且非空，保留该段落
-            if not is_thinking and para_stripped:
+            # 过程性语言检测
+            if not is_thinking:
+                process_words = ['searching', 'looking', 'checking', 'recalling', 'synthesizing', 
+                                'wait', 'hmm', 'okay', 'actually', 'but the user']
+                for word in process_words:
+                    if word in para_lower:
+                        is_thinking = True
+                        break
+            
+            # 如果不是思考内容，保留该段落
+            if not is_thinking:
                 filtered_paragraphs.append(para)
         
         result = '\n\n'.join(filtered_paragraphs).strip()

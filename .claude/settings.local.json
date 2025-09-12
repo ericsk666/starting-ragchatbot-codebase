@@ -14,7 +14,8 @@
       "Bash(mv:*)",
       "Read(//d/study/starting_codebase/**)",
       "Bash(start rag_system_demo_v4.html)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(../.venv/Scripts/python.exe -m uvicorn app:app --reload --port 8000)"
     ],
     "deny": [],
     "ask": []
