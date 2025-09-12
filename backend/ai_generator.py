@@ -176,18 +176,20 @@ Provide only the direct answer to what was asked.
         
         # 步骤2：智能识别答案开始位置
         # 寻找答案的开始标记（通常在思考后有明确的转折）
+        # 注意：移除了 "\n\n1." 避免误删编号列表前的答案内容
         answer_markers = [
             "\n\nThe available course materials",
             "\n\nBased on the course materials",
             "\n\nFrom the course content",
             "\n\nAccording to the materials",
             "\n\nThe course covers",
-            "\n\n1.",  # 编号列表开始
             "\n\n**",  # 粗体标题开始
             "\n\n###",  # Markdown标题
             "\n\n##",
             "\n\nIn the context of",
             "\n\nTo answer your question",
+            "\n\nHere's",  # 常见答案开始
+            "\n\nRAG",  # 直接定义开始
         ]
         
         # 尝试找到答案的开始位置
@@ -236,9 +238,13 @@ Provide only the direct answer to what was asked.
             # 检测真实答案的开始（通常是结构化内容）
             if not found_real_answer:
                 # 检查是否是列表项、标题或正式陈述
+                # 注意：正式定义（如 "RAG (Retrieval-Augmented Generation)"）也是答案
                 if (para_stripped.startswith(('1.', '2.', '3.', '•', '-', '*', '**', '##')) or
                     para_stripped.startswith(('The available', 'Based on the course', 'According to', 
-                                            'In the context', 'Key points', 'Core principles'))):
+                                            'In the context', 'Key points', 'Core principles')) or
+                    # 检测正式定义或技术说明（包含括号解释的术语）
+                    ('(' in para_stripped[:100] and ')' in para_stripped[:150] and 
+                     not any(ind in para_lower for ind in ['i ', "i'm", "let me"]))):
                     found_real_answer = True
                     filtered_paragraphs.append(para)
                     continue
@@ -266,6 +272,16 @@ Provide only the direct answer to what was asked.
                     if word in para_lower:
                         is_thinking = True
                         break
+            
+            # 额外检查：如果段落是正式的技术定义或说明，不应该被过滤
+            # 例如："RAG (Retrieval-Augmented Generation) technology..."
+            if is_thinking:
+                # 检查是否是技术定义（包含缩写和全称）
+                if ('(' in para_stripped[:100] and ')' in para_stripped[:150] and
+                    'technology' in para_lower or 'framework' in para_lower or 
+                    'system' in para_lower or 'method' in para_lower or
+                    'approach' in para_lower or 'technique' in para_lower):
+                    is_thinking = False  # 这是技术定义，不是思考内容
             
             # 如果不是思考内容，保留该段落
             if not is_thinking:
