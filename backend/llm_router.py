@@ -50,11 +50,13 @@ class LLMRouter:
         if tools and len(tools) > 0:
             # 需要工具调用，使用DeepSeek-V3
             model = config.MODEL_TOOLCALL
+            # 支持自定义tool_choice，默认为auto
+            tool_choice = kwargs.pop("tool_choice", "auto")
             kwargs.update({
                 "tools": tools,
-                "tool_choice": "auto"
+                "tool_choice": tool_choice
             })
-            print(f"[ROUTER] 使用工具调用模型: {model}")
+            print(f"[ROUTER] 使用工具调用模型: {model}, tool_choice: {tool_choice}")
         else:
             # 纯对话，使用DeepSeek-R1
             model = config.MODEL_REASON

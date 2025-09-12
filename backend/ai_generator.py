@@ -16,25 +16,23 @@ class AIGenerator:
     # 静态系统提示，避免每次调用重建
     SYSTEM_PROMPT = """You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
 
-Search Tool Usage:
-- Use the search tool **only** for questions about specific course content or detailed educational materials
-- **One search per query maximum**
+MANDATORY Search Protocol:
+- **ALWAYS use the search tool for ANY question** - this ensures accurate, course-specific answers with proper sources
+- **One search per query** - execute exactly one search for each user question
+- Even for general concepts (like "What is RAG?"), search the course materials to provide course-specific context
 - Synthesize search results into accurate, fact-based responses
-- If search yields no results, state this clearly without offering alternatives
 
-Response Protocol:
-- **General knowledge questions**: Answer using existing knowledge without searching
-- **Course-specific questions**: Search first, then answer
-- **No meta-commentary**:
- - Provide direct answers only — no reasoning process, search explanations, or question-type analysis
- - Do not mention "based on the search results"
+Response Requirements:
+- **Always provide answers based on search results** from the course materials
+- **No meta-commentary** - no reasoning process, search explanations, or "based on search results" phrases
+- If search yields no relevant results, state clearly that the topic is not covered in the course materials
 
 All responses must be:
-1. **Brief, Concise and focused** - Get to the point quickly
-2. **Educational** - Maintain instructional value
-3. **Clear** - Use accessible language
-4. **Example-supported** - Include relevant examples when they aid understanding
-Provide only the direct answer to what was asked.
+1. **Source-based** - Derived from course materials via search
+2. **Brief and focused** - Get to the point quickly
+3. **Educational** - Maintain instructional value
+4. **Clear** - Use accessible language
+5. **Example-supported** - Include relevant examples from the course materials
 """
     
     def __init__(self, api_key: str = None, model: str = None):
@@ -121,12 +119,16 @@ Provide only the direct answer to what was asked.
                 openai_tools = self._convert_tools_to_openai(tools)
         
         try:
-            # 使用路由器调用
+            # 使用路由器调用 - 强制工具调用以确保一致性
             if openai_tools:
+                # 强制要求模型使用工具（如果有工具可用）
+                enhanced_params = self.base_params.copy()
+                enhanced_params["tool_choice"] = "required"  # 强制使用工具
+                
                 response = llm_router.call_with_tools(
                     messages=messages,
                     tools=openai_tools,
-                    **self.base_params
+                    **enhanced_params
                 )
             else:
                 response_text = llm_router.call_simple_chat(
@@ -143,8 +145,26 @@ Provide only the direct answer to what was asked.
                     response, messages, openai_tools, tool_manager
                 )
             
-            # 返回普通响应
+            # 如果模型没有调用工具（不应该发生，因为我们强制了tool_choice="required"）
+            # 但为了保险起见，我们仍然处理这种情况
             content = response.choices[0].message.content or ""
+            
+            # 检查是否有工具管理器但没有调用工具（意外情况）
+            if tool_manager and openai_tools:
+                print("[WARNING] 模型未调用工具，尽管设置了required。自动触发搜索...")
+                # 自动执行一次搜索，提取用户查询的关键词
+                import re
+                # 从用户查询中提取关键信息
+                user_query = query if isinstance(query, str) else messages[-1]["content"]
+                # 执行默认搜索
+                try:
+                    search_result = tool_manager.execute_tool("search_course_content", query=user_query)
+                    # 如果有搜索结果，附加说明
+                    if search_result and "No relevant course content found" not in search_result:
+                        content += "\n\n[Note: Auto-search performed to ensure source availability]"
+                except Exception as e:
+                    print(f"[ERROR] 自动搜索失败: {e}")
+            
             # 清理思考内容
             return self._clean_thinking_content(content)
             
