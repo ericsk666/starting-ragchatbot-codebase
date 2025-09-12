@@ -162,7 +162,7 @@ Provide only the direct answer to what was asked.
             清理后的响应文本
         """
         import re
-        from .config import config
+        from config import config
         
         # 检查是否启用清理功能
         if not config.CLEAN_R1_THINKING:
