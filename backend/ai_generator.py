@@ -253,13 +253,45 @@ Provide only the direct answer to what was asked.
             if not para_stripped:
                 continue
             
+            # 首先检测是否是思考内容（即使看起来像答案标题）
+            # 这样可以避免元评论被误判为答案
+            is_meta_comment = False
+            meta_comment_patterns = [
+                "the search results",
+                "the user's question", 
+                "the user is asking",
+                "need to ensure",
+                "need to extract",
+                "check that",
+                "avoid any extra",
+                "as per the instructions",
+                "from the course content provided",
+                "the lesson mentions",
+                "from lesson",
+                "lesson discusses",
+                "putting this together",
+            ]
+            for pattern in meta_comment_patterns:
+                if pattern in para_lower:
+                    is_meta_comment = True
+                    skipped_paragraphs.append(para)
+                    break
+            
+            # 如果是元评论，跳过后续检测
+            if is_meta_comment:
+                continue
+            
             # 检测真实答案的开始（通常是结构化内容）
             if not found_real_answer:
                 # 检查是否是列表项、标题或正式陈述
                 # 注意：正式定义（如 "RAG (Retrieval-Augmented Generation)"）也是答案
                 if (para_stripped.startswith(('1.', '2.', '3.', '•', '-', '*', '**', '##')) or
                     para_stripped.startswith(('The available', 'Based on the course', 'According to', 
-                                            'In the context', 'Key points', 'Core principles')) or
+                                            'In the context', 'Key points', 'Core principles',
+                                            'Best practices', 'Key benefits', 'Main benefits')) or
+                    # 检测带冒号的标题（如 "Best practices for prompt engineering from course materials:"）
+                    (': ' in para_stripped and para_stripped.endswith(':') and 
+                     len(para_stripped) < 100) or
                     # 检测正式定义或技术说明（包含括号解释的术语）
                     ('(' in para_stripped[:100] and ')' in para_stripped[:150] and 
                      not any(ind in para_lower for ind in ['i ', "i'm", "let me"]))):
