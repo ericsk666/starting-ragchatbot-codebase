@@ -37,6 +37,23 @@ function setupEventListeners() {
             sendMessage();
         });
     });
+    
+    // 新对话按钮事件
+    const newChatButton = document.getElementById('newChatButton');
+    if (newChatButton) {
+        newChatButton.addEventListener('click', () => {
+            // 检查是否有实质性对话内容（不只是欢迎消息）
+            if (chatMessages.children.length > 1) {
+                // 有对话内容，需要确认
+                if (confirm('确定要开始新对话吗？当前对话内容将被清空。')) {
+                    createNewSession();
+                }
+            } else {
+                // 只有欢迎消息或空白，直接开始新对话
+                createNewSession();
+            }
+        });
+    }
 }
 
 
@@ -173,9 +190,26 @@ function escapeHtml(text) {
 // Removed removeMessage function - no longer needed since we handle loading differently
 
 async function createNewSession() {
+    // 重置会话ID
     currentSessionId = null;
+    
+    // 清空聊天记录
     chatMessages.innerHTML = '';
+    
+    // 添加欢迎消息
     addMessage('欢迎使用AI学习助手！我可以帮您解答关于课程、教学内容和具体知识点的问题。您想了解什么？', 'assistant', null, true);
+    
+    // 重置输入框状态
+    chatInput.value = '';
+    chatInput.disabled = false;
+    sendButton.disabled = false;
+    chatInput.focus();
+    
+    // 确保推荐问题气泡可见
+    const suggestedBubbles = document.getElementById('suggestedBubbles');
+    if (suggestedBubbles) {
+        suggestedBubbles.style.display = 'flex';
+    }
 }
 
 // Load course statistics

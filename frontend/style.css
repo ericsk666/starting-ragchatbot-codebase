@@ -93,6 +93,59 @@ body {
     margin: 0;
 }
 
+/* 新对话按钮容器 */
+.new-chat-container {
+    padding: 0 0 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+/* 新对话按钮 */
+.new-chat-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.new-chat-button:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.new-chat-button:active {
+    transform: translateY(0);
+}
+
+.new-chat-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* 新对话图标 */
+.new-chat-icon {
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1;
+}
+
+/* 新对话文字 */
+.new-chat-text {
+    font-size: 0.95rem;
+}
+
 /* Main Content Area with Sidebar */
 .main-content {
     flex: 1;
@@ -891,6 +944,10 @@ details[open] .suggested-header::before {
     
     .sidebar {
         display: none;  /* 移动端隐藏侧边栏 */
+    }
+    
+    .new-chat-container {
+        display: none; /* 移动端随侧边栏隐藏 */
     }
     
     .chat-main {
